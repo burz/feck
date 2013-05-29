@@ -2,17 +2,19 @@ instructions  = instruction {"\n" instruction}
 instruction   = assign | value | print | if | while | puts
 
 assign  = left_values "=" right_values
-print   = "print" value {"," value}
-puts    = "puts" value {"," value}
+print   = "print" value_list
+puts    = "puts" value_list
 if      = "if" low_boolean_expression "\n" instructions "\n"
           {"elif" low_boolean_expression "\n" instructions "\n"}
           ["else" instructions "\n"] "end"
 while   = "while" condition "\n" instructions "\n" "end"
+call    = designator ["(" [value_list] ")"}]
 
 left_values   = designator {"," designator}
-right_values  = {value {"," value}}
+right_values  = [value_list]
 
-value = low_boolean_expression | number_expression
+value_list = value {"," value}
+value = low_boolean_expression | number_expression | string
 
 low_boolean_expression  = low_boolean_term {"or" low_boolean_term}
 low_boolean_term        = low_boolean_factor {"and" low_boolean_factor}
@@ -32,12 +34,13 @@ number_condition  = number_expression (">" | "<" | ">=" | "<=") number_expressio
 
 number            = float | integer
 designator        = variable | constant
-condition_value   = number_expression | high_boolean_expression
+condition_value   = high_boolean_expression | number_expression | string
 
 constant  = uppercase [variable]
 variable  = lowercase {uppercase | lowercase}
+string    = """ {[^"] | "\""} """
 float     = integer "." integer
-integer   = (decimal) {decimal}
+integer   = decimal {decimal}
 
 uppercase = "A" | "B" | ... | "Z"
 lowercase = "a" | "b" | ... | "z"
