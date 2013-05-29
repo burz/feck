@@ -75,11 +75,11 @@ class Scanner
             current_string << c
           elsif current_string =~ /^[!><=]$/ and c == "="
             current_string << c
-#          elsif current_string =~ /^["]([^"] | [\\]["])*/ and c != "\""
-#            current_string << c
-#          elsif current_string =~ /^["]([^"] | [\\]["])*/ and c == "\""
-#            strings << current_string + "\""
-#            current_string = ""
+          elsif current_string =~ /^["]([^"] | [\\]["])*/ and c != "\""
+            current_string << c
+          elsif current_string =~ /^["]([^"] | [\\]["])*/ and c == "\""
+            strings << current_string + "\""
+            current_string = ""
           elsif current_string == "|" and c == "|"
             strings << "||"
             current_string = ""
@@ -109,8 +109,8 @@ class Scanner
           tokens << Token.new(:integer, string, line_number + 1)
         elsif string =~ /^[$]?[A-Za-z][A-Za-z0-9_]*$/
           tokens << Token.new(:identifier, string, line_number + 1)
-#        elsif string =~ /^["]([^"] | [\\]["])*["]$/
- #         tokens << Token.new(:string, string[1...(string.size - 1)], line_number + 1)
+        elsif string =~ /^["]([^"] | [\\]["])*["]$/
+          tokens << Token.new(:string, string[1...(string.size - 1)], line_number + 1)
         else
           raise ScannerError.new "Illegal symbol '#{string}' in on line #{line_number + 1}"
         end

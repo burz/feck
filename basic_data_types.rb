@@ -16,3 +16,7 @@ class NilSingleton
   include Singleton
 end
 
+class StringSingleton
+  include Singleton
+end
+
