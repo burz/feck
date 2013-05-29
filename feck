@@ -1,0 +1,54 @@
+#!/usr/bin/ruby
+
+require 'scanner'
+require 'parser'
+require 'symbol_table'
+require 'interpreter'
+
+$FECK_USAGE = "usage: ./feck [\"-l\"|\"-t\"|\"-a\"] filename"
+
+begin
+  if ARGV.size == 0
+    puts $FECK_USAGE
+  elsif ARGV.size > 1
+    case ARGV[0]
+    when "-l"
+      scanner = Scanner.new
+      scanner.read_and_scan ARGV[1]
+      scanner.tokenized_lines.each { |x| puts x.join(" | ") }
+    when "-t"
+      scanner = Scanner.new
+      scanner.read_and_scan ARGV[1]
+      lines = scanner.tokenized_lines
+      parser = Parser.new lines
+      parser.parse
+      parser.symbol_table.graphical
+    when "-a"
+      scanner = Scanner.new
+      scanner.read_and_scan ARGV[1]
+      lines = scanner.tokenized_lines
+      parser = Parser.new lines
+      parser.parse
+      parser.syntax_tree.graphical
+    else
+      puts $FECK_USAGE
+    end
+  else
+    scanner = Scanner.new
+    scanner.read_and_scan ARGV[0]
+    lines = scanner.tokenized_lines
+    parser = Parser.new lines
+    parser.parse
+    interpreter = Interpreter.new parser.symbol_table, parser.syntax_tree
+    interpreter.run
+  end
+rescue ScannerError => e
+  $stderr.puts "\e[31m\e[1merror: #{e}\e[0m"
+rescue ParseError => e
+  $stderr.puts "\e[31m\e[1merror: #{e}\e[0m"
+rescue SymbolTableError => e
+  $stderr.puts "\e[31m\e[1merror: #{e}\e[0m"
+rescue InterpreterError => e
+  $stderr.puts "\e[31m\e[1merror: #{e}\e[0m"
+end
+

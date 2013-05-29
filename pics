@@ -1,0 +1,19 @@
+#!/bin/bash
+
+if [ ! $1 ]; then
+  echo error: no file specified
+else
+  if [ ! $2 ]; then
+    TABLE="table"
+    TREE="tree"
+  else
+    TABLE="$2_table"
+    TREE="$2_tree"
+  fi
+  ./feck -t $1 > table.dot
+  dot -T jpeg table.dot > $TABLE.jpg
+
+  ./feck -a $1 > tree.dot
+  dot -T jpeg tree.dot > $TREE.jpg
+fi
+

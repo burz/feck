@@ -1,0 +1,538 @@
+require 'scanner'
+require 'basic_data_types'
+require 'symbol_table'
+require 'syntax_tree'
+
+class ParseError < StandardError
+end
+
+class Parser
+  attr_accessor :symbol_table, :syntax_tree
+
+  def initialize(tokenized_lines)
+    @tokenized_lines = tokenized_lines
+    @symbol_table = SymbolTable.new
+  end
+
+  def token_at(position)
+    @tokenized_lines[@current_line][position]
+  end
+
+  def next_token
+    @line_position += 1
+  end
+
+  def current_token
+    @tokenized_lines[@current_line][@line_position]
+  end
+
+  def current_token_type
+    @tokenized_lines[@current_line][@line_position].token_type
+  end
+
+  def next_token_type
+    result = token_at(@line_position + 1) && token_at(@line_position + 1).token_type
+  end
+
+  def line_number
+    @current_line + 1
+  end
+
+  def parse
+    @current_line = 0
+    instructs = instructions
+    if @current_line < @tokenized_lines.size
+      if Scanner.is_keyword? current_token_type
+        raise ParseError.new "Misplaced keyword '#{current_token_type}' on line #{line_number}"
+      else
+        raise ParseError.new "Undefined symbol '#{current_token.data}' on line #{line_number}"
+      end
+    end
+    @syntax_tree = SyntaxTree.new instructs
+  end
+
+  def instructions
+    instructs = []
+    while @current_line < @tokenized_lines.size
+      @line_position = 0
+      if not current_token
+        @current_line += 1
+        next
+      end
+      if instr = instruction
+        instructs += Array(instr)
+        @current_line += 1
+      else
+        break
+      end
+    end
+    Instructions.new instructs, line_number
+  end
+
+  def instruction
+    assign || value || print_statement || if_statement || while_statement || puts_statement
+  end
+
+  def assign
+    return false if not token_at @line_position
+    old_position = @line_position
+    if left = left_values
+      if current_token and current_token_type == :"="
+        next_token
+        right = [] if (right = right_values) == false
+        assignments = []
+        if left.size >= right.size
+          (0...left.size).each do |x|
+            if right[x]
+              assignments << Assign.new(left[x], right[x], line_number)
+            else
+              const = Constant.new nil, NilSingleton.instance, line_number
+              imme = Immediate.new const, const.line_number
+              loca = Location.new imme, imme.line_number
+              assignments << Assign.new(left[x], loca, line_number)
+            end
+          end
+        else
+          (0...right.size).each do |x|
+            if left[x]
+              assignments << Assign.new(left[x], right[x], line_number)
+            end
+          end
+        end
+        assignments
+      else
+        @line_position = old_position
+        false
+      end
+    else
+      false
+    end
+  end
+
+  def print_statement
+    return false if not token_at @line_position
+    return false if current_token_type != :print
+    next_token
+    if not val = value
+      raise ParseError.new "The 'print' on line #{line_number} is not followed by an expression"
+    end
+    values = [val]
+    while current_token and current_token_type == :","
+      next_token
+      if not val = value
+        raise ParseError.new "The ',' on line #{line_number} is not follwed by a value"
+      end
+      values << val
+    end
+    Print.new values, line_number
+  end
+
+  def if_statement(name = :"if")
+    return false if not current_token
+    return false if not current_token_type == name
+    next_token
+    if not low_bool_expr = low_boolean_expression
+      raise ParseError.new "The 'if' on line #{line_number} is not followed by a boolean expression"
+    end
+    @current_line += 1
+    instructions_true = instructions
+    elifs = []
+    if name == :"if"
+      while elif = if_statement(:"elif")
+        elifs << elif
+      end
+    end
+    instructions_false = false
+    if name == :"if" and current_token and current_token_type == :"else"
+      next_token
+      @current_line += 1
+      instructions_false = instructions
+    end
+    if name == :"if"
+      if not current_token or current_token_type != :"end"
+        raise ParseError.new "The 'if' on line #{low_bool_expr.line_number} is not terminated by an 'end'"
+      end
+      next_token
+    end
+    If.new name, low_bool_expr, instructions_true, elifs,
+           instructions_false, low_bool_expr.line_number
+  end
+
+  def while_statement
+    return false if not current_token
+    return false if not current_token_type == :"while"
+    next_token
+    if not low_bool_expr = low_boolean_expression
+      raise ParseError.new "The 'while' on line #{line_number} is not followed by a condition"
+    end
+    @current_line += 1
+    instr = instructions
+    if not current_token or current_token_type != :"end"
+      raise ParseError.new "The 'while' on line #{low_bool_expr.line_number} is not terminated by an 'end'"
+    end
+    next_token
+    While.new low_bool_expr, instr, low_bool_expr.line_number
+  end
+
+  def puts_statement
+    return false if not token_at @line_position
+    return false if current_token_type != :puts
+    next_token
+    if not val = value
+      raise ParseError.new "The 'puts' on line #{line_number} is not followed by an expression"
+    end
+    values = [val]
+    while current_token and current_token_type == :","
+      next_token
+      if not val = value
+        raise ParseError.new "The ',' on line #{line_number} is not follwed by a value"
+      end
+      values << val
+    end
+    Puts.new values, line_number
+  end
+
+  def left_values
+    if not des = designator
+      false
+    else
+      locations = [des]
+      while current_token and current_token_type == :","
+        next_token
+        if not des = designator
+          raise ParseError.new "The ',' in the left_values on line #{line_number} is not followed by a designator"
+        end
+        locations << des
+      end
+      locations
+     end
+  end
+
+  def right_values
+    if not val = value
+      false
+    else
+      values = [val]
+      while current_token and current_token_type == :","
+        next_token
+        if not val = value
+          raise ParseError.new "The ',' in the right_values on line #{line_number} is not followed by an expression"
+        end
+        values << val
+      end
+      values
+    end
+  end
+
+  def value
+    low_boolean_expression || number_expression
+  end
+
+  def number_expression
+    return false if not current_token
+    old_position = @line_position
+    if current_token_type == :"-"
+      next_token
+      if not term = number_term
+        raise ParseError.new "The '-' on line #{line_number} is not followed by a term"
+      end
+      const = Constant.new  0, IntegerSingleton.instance, line_number
+      immed = Immediate.new const, const.line_number
+      expr = Expression.new immed, immed.line_number
+      binary = Binary.new expr, :"-", term, term.line_number
+      last_term = Expression.new binary, binary.line_number
+    else
+      if not last_term = number_term
+        @line_position = old_position
+        return false
+      end
+    end
+    while current_token and current_token_type == :"+" || current_token_type == :"-"
+      operator = current_token_type
+      next_token
+      if not term = number_term
+        raise ParseError.new "The '#{operator.to_s}' on line #{line_number} is not followed by a term"
+      end
+      binary = Binary.new last_term, operator, term, term.line_number
+      last_term = Expression.new binary, binary.line_number
+    end
+    last_term
+  end
+
+  def number_term
+    return false if not last_factor = number_factor
+    while current_token and current_token_type == :"*" || current_token_type == :"**" ||
+          current_token_type == :"/" || current_token_type == :"%"
+      operator = current_token_type
+      next_token
+      if not factor = number_factor
+        raise ParseError.new "The '#{factors[-1].to_s}' is not followed by a factor in the expression on line #{line_number}"
+      end
+      binary = Binary.new last_factor, operator, factor, factor.line_number
+      last_factor = Expression.new binary, binary.line_number
+    end
+    last_factor
+  end
+
+  def number_factor
+    factor = number
+    if not factor
+      factor = designator
+      if not factor
+        if current_token_type == :"("
+          next_token
+          factor = number_expression
+          if not factor
+            factor = assign
+            if not factor
+              raise ParseError.new "The '(' on line #{line_number} is not followed by an expression"
+            else
+              factor = Expression.new factor, factor.line_number
+            end
+          end
+          if not current_token_type == :")"
+            raise ParseError.new "The '(' on line #{line_number} is not followed by a ')'"
+          end
+          next_token
+        end
+      else
+        factor = Expression.new factor, factor.line_number
+      end
+    end
+    factor
+  end
+
+  def low_boolean_expression
+    return false if not current_token
+    return false if not last_term = low_boolean_term
+    while current_token and current_token_type == :"or"
+      next_token
+      if not term = low_boolean_term
+        raise ParseError.new "The 'or' on line #{line_number} is not followed by a term"
+      end
+      binary = Binary.new last_term, :"or", term, line_number
+      last_term = Expression.new binary, binary.line_number
+    end
+    last_term
+  end
+
+  def low_boolean_term
+    return false if not current_token
+    return false if not last_factor = low_boolean_factor
+    while current_token and current_token_type == :"and"
+      next_token
+      if not factor = low_boolean_factor
+        raise ParseError.new "The 'and' on line #{line_number} is not followed by a factor"
+      end
+      binary = Binary.new last_factor, :"and", factor, line_number
+      last_factor = Expression.new binary, binary.line_number
+    end
+    last_factor
+  end
+
+  def low_boolean_factor
+    old_position = @line_position
+    negated = false
+    if current_token and current_token_type == :"not"
+      next_token
+      negated = true
+    end
+    factor = condition || assign
+    if not factor
+      if not result = high_boolean_expression
+        if negated
+          raise ParseError.new "The 'not' on line #{line_number} is not followed by a factor"
+        end
+        @line_position = old_position
+        result = false
+      end
+    else
+      result = Expression.new factor, factor.line_number
+    end
+    if result and negated
+      result = Not.new :"Not", result, result.line_number
+      result = Expression.new result, result.line_number
+    end
+    result
+  end
+
+  def high_boolean_expression
+    return false if not current_token
+    return false if not last_term = high_boolean_term
+    while current_token and current_token_type == :"||"
+      next_token
+      if not term = high_boolean_term
+        raise ParseError.new "The '||' on line #{line_number} is not followed by a term"
+      end
+      binary = Binary.new last_term, :"||", term, line_number
+      last_term = Expression.new binary, binary.line_number
+    end
+    last_term
+  end
+
+  def high_boolean_term
+    return false if not current_token
+    return false if not last_factor = high_boolean_factor
+    while current_token and current_token_type == :"&&"
+      next_token
+      if not factor = high_boolean_factor
+        raise ParseError.new "The '&&' on line #{line_number} is not followed by a factor"
+      end
+      binary = Binary.new last_factor, :"&&", factor, line_number
+      last_factor = Expression.new binary, binary.line_number
+    end
+    last_factor
+  end
+
+  def high_boolean_factor
+    return false if not current_token
+    return false if Scanner.number_operator? next_token_type
+    old_position = @line_position
+    negated = false
+    if current_token_type == :"!"
+      next_token
+      negated = true
+    end
+    factor = boolean || nil_value || designator
+    if not factor and current_token
+      if current_token_type == :"("
+        next_token
+        if not result = low_boolean_expression
+            @line_position = old_position
+            result = false
+        else
+          if not current_token or not current_token_type == :")"
+            @line_position = old_position
+            result = false
+          else
+            next_token
+          end
+        end
+      else
+        if negated
+          raise ParseError.new "The 'not' on line #{line_number} is not followed by a factor"
+        end
+        @line_position = old_position
+        result = false
+      end
+    else
+      result = Expression.new factor, factor.line_number
+    end
+    if negated and result
+      result = Not.new :"!", result, result.line_number
+      result = Expression.new result, result.line_number
+    end
+    result
+  end
+
+  def condition
+    value_condition || number_condition
+  end
+
+  def value_condition
+    old_position = @line_position
+    return false if not current_token
+    return false if not left = condition_value
+    if not current_token or
+          (current_token_type != :"is" and current_token_type != :"==" and
+           current_token_type != :"!=")
+      @line_position = old_position
+      return false
+    end
+    operator = current_token_type
+    next_token
+    if not right = condition_value
+      raise ParseError.new "The '#{operator}' on line #{line_number} is not follwed by an expression"
+    end
+    Condition.new left, operator, right, line_number
+  end
+
+  def number_condition
+    old_position = @line_position
+    return false if not current_token
+    return false if not left = number_expression
+    if not current_token or
+          (current_token_type != :">" and current_token_type != :"<" and
+           current_token_type != :">=" and current_token_type != :"<=")
+      @line_position = old_position
+      return false
+    end
+    operator = current_token_type
+    next_token
+    if not right = number_expression
+      raise ParseError.new "The '#{operator}' on line #{line_number} is not follwed by a number expression"
+    end
+    Condition.new left, operator, right, line_number
+  end
+
+  def number
+    num = integer || float
+    if num
+      num = Expression.new num, num.line_number
+    end
+    num
+  end
+
+  def designator
+    desig = identifier
+    if desig
+      if desig.data[0] == ?$
+        @symbol_table.add_to_global_scope desig.data
+      else
+        @symbol_table.add_to_scope desig.data
+      end
+      var = Var.new desig.data, desig.line_number
+      desig = Location.new var, var.line_number
+    end
+    desig
+  end
+
+  def condition_value
+    number_expression || high_boolean_expression
+  end
+
+  def identifier
+    return false if not current_token
+    return false if current_token_type != :identifier
+    next_token
+    token_at(@line_position - 1)
+  end
+
+  def float
+    return false if not current_token
+    return false if current_token_type != :float
+    token = current_token
+    next_token
+    const = Constant.new token.data.to_f, FloatSingleton.instance, token.line_number
+    Immediate.new const, const.line_number
+  end
+
+  def integer
+    return false if not current_token
+    return false if current_token_type != :integer
+    token = current_token
+    next_token
+    const = Constant.new token.data.to_i, IntegerSingleton.instance, token.line_number
+    Immediate.new const, const.line_number
+  end
+
+  def boolean
+    return false if not current_token
+    return false if current_token_type != :true and current_token_type != :false
+    token = current_token
+    value = current_token_type == :true
+    next_token
+    const = Constant.new value, BooleanSingleton.instance, token.line_number
+    Immediate.new const, const.line_number
+  end
+
+  def nil_value
+    return false if not current_token
+    return false if current_token_type != :nil
+    token = current_token
+    next_token
+    const = Constant.new nil, NilSingleton.instance, token.line_number
+    Immediate.new const, const.line_number
+  end
+end
+

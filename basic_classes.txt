@@ -1,0 +1,24 @@
+:::::::::::::
+    Array
+:::::::::::::
+
+array = "[" rvalues "]"
+
+Basic functionality:
+
+[x]           - Access the element at index x
+[x:y]         - Get the array containing elements of index x <= i < y
+[x,y]         - Access the array at x, and the value at index y in that array
+.size         - Returns the size of the array
+.append(x)    - Add x to the array
+.remove(x)    - Remove the first occurence of x in the array
+.includes?(x) - True if the array contains x
+.push(x)      - Put the element x at the end of the array
+.pop          - Remove the last element of the array
+
+::::::::::::::
+  Dictionary
+::::::::::::::
+
+TBD
+

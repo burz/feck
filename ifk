@@ -1,0 +1,44 @@
+#!/usr/bin/ruby
+
+require 'scanner'
+require 'parser'
+require 'symbol_table'
+require 'interpreter'
+
+class IFK
+  def initialize
+    @line_number = 1
+  end
+
+  def run
+    scanner = Scanner.new
+    print "ifk:#{@line_number}> "
+    STDOUT.flush
+    while line = gets
+      begin
+        tokens = scanner.scan_line(line, @line_number)
+        parser = Parser.new([tokens])
+        parser.parse
+        interpreter = Interpreter.new(parser.symbol_table, parser.syntax_tree)
+        interpreter.run
+        puts "=> #{(result = interpreter.last_expression[0]) == nil ? "nil" : result}"
+      rescue ScannerError => e
+        puts "\e[31m\e[1merror: #{e}\e[0m"
+      rescue ParseError => e
+        puts "\e[31m\e[1merror: #{e}\e[0m"
+      rescue SymbolTableError => e
+        puts "\e[31m\e[1merror: #{e}\e[0m"
+      rescue InterpreterError => e
+        puts "\e[31m\e[1merror: #{e}\e[0m"
+      end
+      @line_number += 1
+      print "ifk:#{@line_number}> "
+      STDOUT.flush
+    end
+  end
+end
+
+ifk = IFK.new
+
+ifk.run
+

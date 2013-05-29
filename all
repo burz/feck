@@ -1,0 +1,11 @@
+#!/bin/bash
+
+if [ ! $1 ]; then
+  echo error: no file specified
+else
+  ./feck -l $1
+  ./pics $1
+  echo ======OUTPUT======
+  ./feck $1
+fi
+

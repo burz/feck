@@ -1,0 +1,47 @@
+instructions  = instruction {"\n" instruction}
+instruction   = assign | value | print | if | while | puts
+
+assign  = left_values "=" right_values
+print   = "print" value {"," value}
+puts    = "puts" value {"," value}
+if      = "if" low_boolean_expression "\n" instructions "\n"
+          {"elif" low_boolean_expression "\n" instructions "\n"}
+          ["else" instructions "\n"] "end"
+while   = "while" condition "\n" instructions "\n" "end"
+
+left_values   = designator {"," designator}
+right_values  = {value {"," value}}
+
+value = low_boolean_expression | number_expression
+
+low_boolean_expression  = low_boolean_term {"or" low_boolean_term}
+low_boolean_term        = low_boolean_factor {"and" low_boolean_factor}
+low_boolean_factor      = ["not"] (condition | assign | high_boolean_expression)
+
+high_boolean_expression = high_boolean_term {"||" high_boolean_term}
+high_boolean_term       = high_boolean_factor {"&&" high_boolean_factor}
+high_boolean_factor     = ["!"] (boolean | nil | designator | "(" low_boolean_expression ")")
+
+number_expression = ["-"] number_term {("+" | "-") number_term}
+number_term       = number_factor {("*" | "**" | "/" | "%") number_factor}
+number_factor     = number | designator | "(" (number_expression | assign) ")"
+
+condition         = value_condition | number_condition
+value_condition   = condition_value ("is" | "==" | "!=" ) condition_value
+number_condition  = number_expression (">" | "<" | ">=" | "<=") number_expression
+
+number            = float | integer
+designator        = variable | constant
+condition_value   = number_expression | high_boolean_expression
+
+constant  = uppercase [variable]
+variable  = lowercase {uppercase | lowercase}
+float     = integer "." integer
+integer   = (decimal) {decimal}
+
+uppercase = "A" | "B" | ... | "Z"
+lowercase = "a" | "b" | ... | "z"
+boolean   = "true" | "false"
+nil       = "nil"
+decimal   = "0" | "1" | ... | "9"
+
