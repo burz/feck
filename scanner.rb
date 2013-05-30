@@ -21,102 +21,179 @@ class ScannerError < StandardError
 end
 
 class Scanner
-  KEYWORDS = [:if, :print, :"=", :",", :true, :false, :nil,
-              :"-", :"+", :"*", :"/", :"%", :"(", :")",
-              :"!", :"||", :"&&", :"not", :"or", :"and",
-              :"if", :"elif", :"else", :"end", :"is", :"==",
-              :"!=", :">", :"<", :">=", :"<=", :"while",
-              :"puts", :"**"]
+  @@KEYWORDS = [:if, :print, :"=", :",", :true, :false, :nil,
+                :-, :+, :*, :/, :%, :"(", :")",
+                :"!", :"||", :"&&", :not, :or, :and,
+                :if, :elif, :else, :end, :is, :==,
+                :"!=", :>, :<, :>=, :<=, :while,
+                :puts, :**]
 
-  NUMBER_OPS = [:"-", :"+", :"*", :"**", :"/", :"%"]
+  @@NUMBER_OPS = [:-, :+, :*, :**, :/, :%]
 
-  attr_accessor :tokenized_lines
+  @@LINE_CONCATENATORS = [:",", :-, :+, :*, :**, :/, :%, :"!", :"||",
+                          :"&&", :not, :or, :and, :if, :elif,
+                          :is, :==, :"!=", :>, :<, :>=, :<=,
+                          :while, :**]
+
+  attr_accessor :tokenized_lines, :new_tokens
 
   def initialize
     @tokenized_lines = []
   end
 
-  def self.is_keyword?(keyword)
-		KEYWORDS.find_index(keyword) != nil
+  def self.is_keyword?(symbol)
+		@@KEYWORDS.find_index(symbol) != nil
   end
 
-  def self.number_operator?(operator)
-    NUMBER_OPS.find_index(operator) != nil
+  def self.number_operator?(symbol)
+    @@NUMBER_OPS.find_index(symbol) != nil
+  end
+
+  def self.line_concatenator?(symbol)
+    @@LINE_CONCATENATORS.find_index(symbol) != nil
+  end
+
+  def current_line
+    @lines[@current_line_number]
+  end
+
+  def next_line
+    @current_line_number += 1
+  end
+
+  def current_char
+    @lines[@current_line_number][@line_position]
+  end
+
+  def next_char
+    @line_position += 1
   end
 
   def read_and_scan(file_name)
-    scan File.readlines(file_name) 
-  end
-
-  def scan(lines)
-		lines.each_with_index do |line, i|
-      tokens = scan_line line, i
-      if tokens.size > 0
-        @tokenized_lines << tokens
+    @lines = File.readlines(file_name) 
+    @current_line_number = 0
+    string_buffer = ""
+    line_overlap = false
+    while @current_line_number < @lines.size
+      @line_position = 0
+      next if not current_char
+      if not line_overlap
+        string_buffer = ""
+        strings = []
+      else
+        line_overlap = false
       end
+      while @line_position < current_line.size
+        if string_buffer.size > 0 
+          if current_char =~ /\s/
+            strings << string_buffer
+            string_buffer = ""
+          elsif new_token? string_buffer, current_char
+            strings << string_buffer
+            string_buffer = current_char
+          end
+        else
+          string_buffer << current_char
+        end
+        next_char
+      end
+      if string_buffer.size > 0 and not line_overlap
+        strings << string_buffer
+        string_buffer = ""
+      end
+      tokens = to_tokens(strings, @current_line_number)
+      if not line_overlap
+        @tokenized_lines << tokens 
+      else
+        puts "poop"
+      end
+      next_line
     end
   end
 
   def scan_line(line, line_number)
+    @new_tokens ||= []
+    @unclosed_parentheses ||= 0
+    @line_position = 0
     tokens = []
-    line.split.each do |word|
-      break if word[0] == ?#
-      strings = []
-      current_string = ""
-      word.each_char do |c|
-        if current_string.size > 0
-          if current_string =~ /^[$]?[A-Za-z0-9_]*$/ and c =~ /[A-Za-z0-9_]/
-            current_string << c
-          elsif current_string =~ /^[0-9]+$/ and c =~ /[0-9.]/
-            current_string << c
-          elsif current_string =~ /^[0-9]+[.][0-9]*/ and c =~ /[0-9]/
-            current_string << c
-          elsif current_string =~ /^[0-9]*$/ and c =~ /[0-9]/
-            current_string << c
-          elsif current_string =~ /^[!><=]$/ and c == "="
-            current_string << c
-          elsif current_string =~ /^["]([^"] | [\\]["])*/ and c != "\""
-            current_string << c
-          elsif current_string =~ /^["]([^"] | [\\]["])*/ and c == "\""
-            strings << current_string + "\""
-            current_string = ""
-          elsif current_string == "|" and c == "|"
-            strings << "||"
-            current_string = ""
-          elsif current_string == "&" and c == "&"
-            strings << "&&"
-            current_string = ""
-          elsif current_string == "*" and c == "*"
-            strings << "**"
-            current_string = ""
-          else
-            strings << current_string
-            current_string = c
+    string_buffer = ""
+    while @line_position < line.size
+      break if not line[@line_position]
+      if line[@line_position, 1] =~ /\s/
+        if string_buffer.size > 0
+          @new_tokens << to_token(string_buffer, line_number)
+          string_buffer = ""
+        end
+      elsif string_buffer.size > 0
+        if line[@line_position] == ?(
+          @unclosed_parentheses += 1
+        elsif @unclosed_parentheses > 0 and line[@line_position] == ?)
+          @unclosed_parentheses -= 1
+          if @unclosed_parentheses < 0
+            raise ScannerError.new "Unexpected close of parenthesis on line #{line_number}"
           end
-        else
-          current_string << c
         end
-      end
-      if current_string.size > 0
-        strings << current_string
-      end
-      strings.each do |string|
-        if Scanner.is_keyword? string.to_sym
-          tokens << Token.new(:"#{string}", string, line_number + 1)
-        elsif string =~ /^[0-9]+[.][0-9]+/
-          tokens << Token.new(:float, string, line_number + 1)
-        elsif string =~ /^[0-9]*$/
-          tokens << Token.new(:integer, string, line_number + 1)
-        elsif string =~ /^[$]?[A-Za-z][A-Za-z0-9_]*$/
-          tokens << Token.new(:identifier, string, line_number + 1)
-        elsif string =~ /^["]([^"] | [\\]["])*["]$/
-          tokens << Token.new(:string, string[1...(string.size - 1)], line_number + 1)
+        if new_token? string_buffer, line[@line_position, 1]
+          @new_tokens << to_token(string_buffer, line_number)
+          string_buffer = line[@line_position, 1]
         else
-          raise ScannerError.new "Illegal symbol '#{string}' in on line #{line_number + 1}"
+          string_buffer << line[@line_position]
         end
+      else
+        string_buffer << line[@line_position]
       end
+      next_char
+    end
+    if string_buffer.size > 0
+      @new_tokens << to_token(string_buffer, line_number)
+    end 
+    if (not @unclosed_parenthesis or @unclosed_parenthesis == 0) and
+        not Scanner.line_concatenator? @new_tokens[-1].token_type
+      finished = true
+    end
+    finished
+  end
+
+  def new_token?(string_buffer, char)
+    if (string_buffer =~ /^[$]?[A-Za-z0-9_]*$/ and char =~ /[A-Za-z0-9_]/) or
+        (string_buffer =~ /^[0-9]+/ and char =~ /[0-9.]/) or
+        (string_buffer =~ /^[0-9]+[.][0-9]*/ and char =~ /[0-9]/) or
+        (string_buffer =~ /^[0-9]*$/ and char =~ /[0-9]/) or
+        (string_buffer =~ /^[!><=]$/ and char == "=") or
+        (string_buffer =~ /^["]([^"] | [\\]["])*/ and char != ?") or
+        (string_buffer =~ /^["]([^"] | [\\]["])*/ and char == ?") or
+        (string_buffer == "|" and char == ?|) or
+        (string_buffer == "&" and char == ?&) or
+        (string_buffer == "*" and char == ?*)
+      result = false
+    else
+      result = true
+    end
+  end
+
+  def to_tokens(strings, line_number)
+    tokens = []
+    strings.each do |string|
+      tokens << to_token(string, line_number)
     end
     tokens
+  end
+
+  def to_token(string, line_number)
+    if Scanner.is_keyword? string.to_sym
+      token = Token.new(:"#{string}", string, line_number)
+    elsif string =~ /^[0-9]+[.][0-9]+/
+      token = Token.new(:float, string, line_number)
+    elsif string =~ /^[0-9]*$/
+      token = Token.new(:integer, string, line_number)
+    elsif string =~ /^[$]?[A-Za-z][A-Za-z0-9_]*$/
+      token = Token.new(:identifier, string, line_number)
+    elsif string =~ /^["]([^"] | [\\]["])*["]$/
+      token = Token.new(:string, string[1...(string.size - 1)], line_number)
+    else
+      raise ScannerError.new("Illegal symbol '#{string}' on line #{line_number}")
+    end
+    token
   end
 end
 

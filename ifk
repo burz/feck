@@ -5,6 +5,9 @@ require 'parser'
 require 'symbol_table'
 require 'interpreter'
 
+class IFKError < StandardError
+end
+
 class IFK
   def initialize
     @line_number = 1
@@ -12,16 +15,35 @@ class IFK
 
   def run
     scanner = Scanner.new
-    print "ifk:#{@line_number}> "
+    print "ifk:#{@line_number}  > "
     STDOUT.flush
+    stop = false
     while line = gets
       begin
-        tokens = scanner.scan_line(line, @line_number)
-        parser = Parser.new([tokens])
+        if not scanner.scan_line(line, @line_number)
+          @line_number += 1
+          print "ifk:#{@line_number} ?> "
+          STDOUT.flush
+          while line = gets
+            stop = scanner.scan_line(line, @line_number)
+            if stop == false
+              @line_number += 1
+              print "ifk:#{@line_number}  ?> "
+              STDOUT.flush
+            else
+              break
+            end
+          end
+          if not line
+            raise IFKError.new "Line #{@line_number} ends on a '#{scanner.new_tokens[-1].data}'"
+          end
+        end
+        parser = Parser.new([scanner.new_tokens])
         parser.parse
         interpreter = Interpreter.new(parser.symbol_table, parser.syntax_tree)
         interpreter.run
         puts "=> #{(result = interpreter.last_expression[0]) == nil ? "nil" : result}"
+        scanner.new_tokens = []
       rescue ScannerError => e
         puts "\e[31m\e[1merror: #{e}\e[0m"
       rescue ParseError => e
@@ -30,9 +52,11 @@ class IFK
         puts "\e[31m\e[1merror: #{e}\e[0m"
       rescue InterpreterError => e
         puts "\e[31m\e[1merror: #{e}\e[0m"
+      rescue IFKError => e
+        puts "\e[31m\e[1merror: #{e}\e[0m"
       end
       @line_number += 1
-      print "ifk:#{@line_number}> "
+      print "ifk:#{@line_number}  > "
       STDOUT.flush
     end
   end

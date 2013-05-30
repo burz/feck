@@ -25,7 +25,8 @@ high_boolean_term       = high_boolean_factor {"&&" high_boolean_factor}
 high_boolean_factor     = ["!"] (boolean | nil | designator | "(" low_boolean_expression ")")
 
 number_expression = ["-"] number_term {("+" | "-") number_term}
-number_term       = number_factor {("*" | "**" | "/" | "%") number_factor}
+number_term       = number_power {("*" | "/" | "%") number_power}
+number_power      = number_factor {"**" number_factor}
 number_factor     = number | designator | "(" (number_expression | assign) ")"
 
 condition         = value_condition | number_condition
