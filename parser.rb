@@ -266,7 +266,7 @@ class Parser
       operator = current_token_type
       next_token
       if not factor = number_factor
-        raise ParseError.new "The '#{factors[-1].to_s}' is not followed by a factor in the expression on line #{line_number}"
+        raise ParseError.new "The '#{token_at(@current_position - 1)}' is not followed by a factor in the expression on line #{line_number}"
       end
       binary = Binary.new last_factor, operator, factor, factor.line_number
       last_factor = Expression.new binary, binary.line_number

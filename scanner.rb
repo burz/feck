@@ -92,29 +92,39 @@ class Scanner
     string_buffer = ""
     while @line_position < line.size
       break if not line[@line_position]
-      if line[@line_position] == ?(
+#      puts line[@line_position..@line_position]
+      if line[@line_position, 1] == "#"
+        break
+      elsif line[@line_position, 1] == "("
         @unclosed_parentheses += 1
-        string_buffer << line[@line_position]
-      elsif @unclosed_parentheses > 0 and line[@line_position] == ?)
+        if string_buffer.size > 0
+          @new_tokens << to_token(string_buffer)
+        end
+        string_buffer = line[@line_position, 1]
+      elsif @unclosed_parentheses > 0 and line[@line_position, 1] == ")"
         @unclosed_parentheses -= 1
         if @unclosed_parentheses < 0
           raise ScannerError.new "Unexpected close of parenthesis on line #{@line_number}"
         end
-        string_buffer << line[@line_position]
+        if string_buffer.size > 0
+          @new_tokens << to_token(string_buffer)
+        end
+        string_buffer = line[@line_position, 1]
       elsif line[@line_position, 1] =~ /\s/
         if string_buffer.size > 0
           @new_tokens << to_token(string_buffer)
           string_buffer = ""
         end
       elsif string_buffer.size > 0
+#        puts "here #{new_token?(string_buffer, line[@line_position, 1])}"
         if new_token? string_buffer, line[@line_position, 1]
           @new_tokens << to_token(string_buffer)
           string_buffer = line[@line_position, 1]
         else
-          string_buffer << line[@line_position]
+          string_buffer << line[@line_position, 1]
         end
       else
-        string_buffer << line[@line_position]
+        string_buffer << line[@line_position, 1]
       end
       next_char
     end
@@ -129,16 +139,18 @@ class Scanner
   end
 
   def new_token?(string_buffer, char)
+#    puts "char #{char}"
+#    puts "**   #{string_buffer == "*" and char == ?*} #{string_buffer == "*"} #{char == "*"}"
     if (string_buffer =~ /^[$]?[A-Za-z0-9_]*$/ and char =~ /[A-Za-z0-9_]/) or
         (string_buffer =~ /^[0-9]+/ and char =~ /[0-9.]/) or
         (string_buffer =~ /^[0-9]+[.][0-9]*/ and char =~ /[0-9]/) or
         (string_buffer =~ /^[0-9]*$/ and char =~ /[0-9]/) or
         (string_buffer =~ /^[!><=]$/ and char == "=") or
-        (string_buffer =~ /^["]([^"] | [\\]["])*/ and char != ?") or
-        (string_buffer =~ /^["]([^"] | [\\]["])*/ and char == ?") or
-        (string_buffer == "|" and char == ?|) or
-        (string_buffer == "&" and char == ?&) or
-        (string_buffer == "*" and char == ?*)
+        (string_buffer =~ /^["]([^"] | [\\]["])*/ and char != "\"") or
+        (string_buffer =~ /^["]([^"] | [\\]["])*/ and char == "\"") or
+        (string_buffer == "|" and char == "|") or
+        (string_buffer == "&" and char == "&") or
+        (string_buffer == "*" and char == "*")
       result = false
     else
       result = true

@@ -1,25 +1,25 @@
 aj = 7
 pmq = 723
 
-print aj
-print pmq
+puts aj
+puts pmq
 
 j, a = 98, 99
 
 k = true
 
-print j # no more anything motherfucker
-print a
+puts j # no more anything motherfucker
+puts a
 
 e = 5
 
-print e
+puts e
 
 c, d, e = 1, 2
 
-print c
-print d
-print e
+puts c
+puts d
+puts e
 
 7898
 

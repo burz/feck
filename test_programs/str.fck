@@ -1,2 +1,2 @@
-print "hello there"
+puts "hello there"
 

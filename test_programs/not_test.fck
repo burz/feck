@@ -1,2 +1,2 @@
-print not !true && false or true and false
+puts not !true && false or true and false
 

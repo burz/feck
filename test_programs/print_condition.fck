@@ -1,2 +1,2 @@
-print not 1 == 3
+puts not 1 == 3
 

@@ -1,13 +1,13 @@
 a = 5 * 32
 b = (7 - 5) / 2
 
-print a, b
+puts a, b
 
 a = true and false
 
-print a
+puts a
 
-print nil or true
+puts nil or true
 
-print -(9 * 10)
+puts -(9 * 10)
 
