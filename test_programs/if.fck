@@ -1,0 +1,10 @@
+if 54 <= 10
+  print 7
+elif 5 is 5
+  print 65
+else
+  print 89
+end
+
+print true and false
+

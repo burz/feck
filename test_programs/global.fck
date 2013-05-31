@@ -1,0 +1,10 @@
+$lol_what = 234
+a = true
+
+print $lol_what
+print a
+
+print 45
+
+print nil
+

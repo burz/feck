@@ -1,0 +1,26 @@
+aj = 7
+pmq = 723
+
+print aj
+print pmq
+
+j, a = 98, 99
+
+k = true
+
+print j # no more anything motherfucker
+print a
+
+e = 5
+
+print e
+
+c, d, e = 1, 2
+
+print c
+print d
+print e
+
+7898
+
+
