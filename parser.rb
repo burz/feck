@@ -307,6 +307,7 @@ class Parser
     return false if not last_term = low_boolean_term
     while current_token and current_token_type == :"or"
       next_token
+      puts "{{{{ #{current_token}"
       if not term = low_boolean_term
         raise ParseError.new "The 'or' on line #{line_number} is not followed by a term"
       end

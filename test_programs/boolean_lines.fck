@@ -1,0 +1,5 @@
+puts true and
+false or
+true ||
+false
+
