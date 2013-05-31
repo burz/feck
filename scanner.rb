@@ -53,65 +53,38 @@ class Scanner
     @@LINE_CONCATENATORS.find_index(symbol) != nil
   end
 
-  def current_line
-    @lines[@current_line_number]
-  end
-
-  def next_line
-    @current_line_number += 1
-  end
-
-  def current_char
-    @lines[@current_line_number][@line_position]
-  end
-
   def next_char
     @line_position += 1
   end
 
-  def read_and_scan(file_name)
-    @lines = File.readlines(file_name) 
-    @current_line_number = 0
-    string_buffer = ""
-    line_overlap = false
-    while @current_line_number < @lines.size
-      @line_position = 0
-      next if not current_char
-      if not line_overlap
-        string_buffer = ""
-        strings = []
-      else
-        line_overlap = false
-      end
-      while @line_position < current_line.size
-        if string_buffer.size > 0 
-          if current_char =~ /\s/
-            strings << string_buffer
-            string_buffer = ""
-          elsif new_token? string_buffer, current_char
-            strings << string_buffer
-            string_buffer = current_char
+  def scan_file(file_name)
+    @line_number = 1
+    @tokenized_lines = []
+    @new_tokens = []
+    @unclosed_parentheses = 0
+    lines = File.readlines(file_name)
+    while @line_number <= lines.size
+      if not lines[@line_number - 1] =~ /^[\s]*$/
+        if not scan_line lines[@line_number - 1]
+          @line_number += 1
+          while @line_number <= lines.size and not scan_line lines[@line_number - 1]
+            @line_number += 1
           end
-        else
-          string_buffer << current_char
+          if @line_number > lines.size
+            raise ScannerError.new "The '#{lines[@line_number - 1][-1]} on line #{@line_number} is not followed by anything"
+          end
         end
-        next_char
+        @tokenized_lines << @new_tokens
+        @new_tokens = []
       end
-      if string_buffer.size > 0 and not line_overlap
-        strings << string_buffer
-        string_buffer = ""
-      end
-      tokens = to_tokens(strings, @current_line_number)
-      if not line_overlap
-        @tokenized_lines << tokens 
-      else
-        puts "poop"
-      end
-      next_line
+      @line_number += 1
     end
   end
 
-  def scan_line(line, line_number)
+  def scan_line(line, line_number = false)
+    if line_number
+      @line_number = line_number
+    end
     @new_tokens ||= []
     @unclosed_parentheses ||= 0
     @line_position = 0
@@ -119,22 +92,23 @@ class Scanner
     string_buffer = ""
     while @line_position < line.size
       break if not line[@line_position]
-      if line[@line_position, 1] =~ /\s/
+      if line[@line_position] == ?(
+        @unclosed_parentheses += 1
+        string_buffer << line[@line_position]
+      elsif @unclosed_parentheses > 0 and line[@line_position] == ?)
+        @unclosed_parentheses -= 1
+        if @unclosed_parentheses < 0
+          raise ScannerError.new "Unexpected close of parenthesis on line #{@line_number}"
+        end
+        string_buffer << line[@line_position]
+      elsif line[@line_position, 1] =~ /\s/
         if string_buffer.size > 0
-          @new_tokens << to_token(string_buffer, line_number)
+          @new_tokens << to_token(string_buffer)
           string_buffer = ""
         end
       elsif string_buffer.size > 0
-        if line[@line_position] == ?(
-          @unclosed_parentheses += 1
-        elsif @unclosed_parentheses > 0 and line[@line_position] == ?)
-          @unclosed_parentheses -= 1
-          if @unclosed_parentheses < 0
-            raise ScannerError.new "Unexpected close of parenthesis on line #{line_number}"
-          end
-        end
         if new_token? string_buffer, line[@line_position, 1]
-          @new_tokens << to_token(string_buffer, line_number)
+          @new_tokens << to_token(string_buffer)
           string_buffer = line[@line_position, 1]
         else
           string_buffer << line[@line_position]
@@ -145,9 +119,9 @@ class Scanner
       next_char
     end
     if string_buffer.size > 0
-      @new_tokens << to_token(string_buffer, line_number)
+      @new_tokens << to_token(string_buffer)
     end 
-    if (not @unclosed_parenthesis or @unclosed_parenthesis == 0) and
+    if (not @unclosed_parentheses or @unclosed_parentheses == 0) and
         not Scanner.line_concatenator? @new_tokens[-1].token_type
       finished = true
     end
@@ -171,27 +145,27 @@ class Scanner
     end
   end
 
-  def to_tokens(strings, line_number)
+  def to_tokens(strings)
     tokens = []
     strings.each do |string|
-      tokens << to_token(string, line_number)
+      tokens << to_token(string, @line_number)
     end
     tokens
   end
 
-  def to_token(string, line_number)
+  def to_token(string)
     if Scanner.is_keyword? string.to_sym
-      token = Token.new(:"#{string}", string, line_number)
+      token = Token.new(:"#{string}", string, @line_number)
     elsif string =~ /^[0-9]+[.][0-9]+/
-      token = Token.new(:float, string, line_number)
+      token = Token.new(:float, string, @line_number)
     elsif string =~ /^[0-9]*$/
-      token = Token.new(:integer, string, line_number)
+      token = Token.new(:integer, string, @line_number)
     elsif string =~ /^[$]?[A-Za-z][A-Za-z0-9_]*$/
-      token = Token.new(:identifier, string, line_number)
+      token = Token.new(:identifier, string, @line_number)
     elsif string =~ /^["]([^"] | [\\]["])*["]$/
-      token = Token.new(:string, string[1...(string.size - 1)], line_number)
+      token = Token.new(:string, string[1...(string.size - 1)], @line_number)
     else
-      raise ScannerError.new("Illegal symbol '#{string}' on line #{line_number}")
+      raise ScannerError.new("Illegal symbol '#{string}' on line #{@line_number}")
     end
     token
   end

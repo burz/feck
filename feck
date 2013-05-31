@@ -14,18 +14,18 @@ begin
     case ARGV[0]
     when "-l"
       scanner = Scanner.new
-      scanner.read_and_scan ARGV[1]
+      scanner.scan_file ARGV[1]
       scanner.tokenized_lines.each { |x| puts x.join(" | ") }
     when "-t"
       scanner = Scanner.new
-      scanner.read_and_scan ARGV[1]
+      scanner.scan_file ARGV[1]
       lines = scanner.tokenized_lines
       parser = Parser.new lines
       parser.parse
       parser.symbol_table.graphical
     when "-a"
       scanner = Scanner.new
-      scanner.read_and_scan ARGV[1]
+      scanner.scan_file ARGV[1]
       lines = scanner.tokenized_lines
       parser = Parser.new lines
       parser.parse
@@ -35,7 +35,7 @@ begin
     end
   else
     scanner = Scanner.new
-    scanner.read_and_scan ARGV[0]
+    scanner.scan_file ARGV[0]
     lines = scanner.tokenized_lines
     parser = Parser.new lines
     parser.parse

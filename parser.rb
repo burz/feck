@@ -290,7 +290,7 @@ class Parser
               factor = Expression.new factor, factor.line_number
             end
           end
-          if not current_token_type == :")"
+          if not current_token or not current_token_type == :")"
             raise ParseError.new "The '(' on line #{line_number} is not followed by a ')'"
           end
           next_token
