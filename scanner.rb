@@ -102,10 +102,10 @@ class Scanner
         else
           @in_string << line[@line_position, 1]
         end
-      elsif line[@line_position, 1] == "#"
-        break
       elsif line[@line_position, 1] == "\""
         @in_string = ""
+      elsif line[@line_position, 1] == "#"
+        break
       elsif line[@line_position, 1] == "("
         @unclosed_parentheses += 1
         if string_buffer.size > 0
@@ -141,7 +141,7 @@ class Scanner
     if string_buffer.size > 0
       @new_tokens << to_token(string_buffer)
     end 
-    if (@in_string or not @unclosed_parentheses or @unclosed_parentheses == 0) and
+    if not @in_string and (not @unclosed_parentheses or @unclosed_parentheses == 0) and
         not Scanner.line_concatenator? @new_tokens[-1].token_type
       finished = true
     end
