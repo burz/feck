@@ -92,9 +92,20 @@ class Scanner
     string_buffer = ""
     while @line_position < line.size
       break if not line[@line_position]
-#      puts line[@line_position..@line_position]
-      if line[@line_position, 1] == "#"
+      if @in_string
+        if line[@line_position, 1] == "\""
+          @new_tokens << Token.new(:string, @in_string, @line_number)
+          @in_string = false
+        elsif line[@line_position, 2] == "\\\""
+          @in_string << "\""
+          next_char
+        else
+          @in_string << line[@line_position, 1]
+        end
+      elsif line[@line_position, 1] == "#"
         break
+      elsif line[@line_position, 1] == "\""
+        @in_string = ""
       elsif line[@line_position, 1] == "("
         @unclosed_parentheses += 1
         if string_buffer.size > 0
@@ -116,7 +127,6 @@ class Scanner
           string_buffer = ""
         end
       elsif string_buffer.size > 0
-#        puts "here #{new_token?(string_buffer, line[@line_position, 1])}"
         if new_token? string_buffer, line[@line_position, 1]
           @new_tokens << to_token(string_buffer)
           string_buffer = line[@line_position, 1]
@@ -131,7 +141,7 @@ class Scanner
     if string_buffer.size > 0
       @new_tokens << to_token(string_buffer)
     end 
-    if (not @unclosed_parentheses or @unclosed_parentheses == 0) and
+    if (@in_string or not @unclosed_parentheses or @unclosed_parentheses == 0) and
         not Scanner.line_concatenator? @new_tokens[-1].token_type
       finished = true
     end
@@ -139,8 +149,6 @@ class Scanner
   end
 
   def new_token?(string_buffer, char)
-#    puts "char #{char}"
-#    puts "**   #{string_buffer == "*" and char == ?*} #{string_buffer == "*"} #{char == "*"}"
     if (string_buffer =~ /^[$]?[A-Za-z0-9_]*$/ and char =~ /[A-Za-z0-9_]/) or
         (string_buffer =~ /^[0-9]+/ and char =~ /[0-9.]/) or
         (string_buffer =~ /^[0-9]+[.][0-9]*/ and char =~ /[0-9]/) or

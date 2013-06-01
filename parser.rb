@@ -225,7 +225,11 @@ class Parser
   end
 
   def value
-    low_boolean_expression || number_expression
+    val = low_boolean_expression || number_expression
+    if not val and str = string
+      val = Expression.new str, str.line_number
+    end
+    val
   end
 
   def number_expression
@@ -307,7 +311,6 @@ class Parser
     return false if not last_term = low_boolean_term
     while current_token and current_token_type == :"or"
       next_token
-      puts "{{{{ #{current_token}"
       if not term = low_boolean_term
         raise ParseError.new "The 'or' on line #{line_number} is not followed by a term"
       end
@@ -489,7 +492,11 @@ class Parser
   end
 
   def condition_value
-    number_expression || high_boolean_expression
+    condition_value = number_expression || high_boolean_expression
+    if not condition_value and str = string
+      condition_value = Expression.new str, str.line_number
+    end
+    condition_value
   end
 
   def identifier
@@ -533,6 +540,15 @@ class Parser
     token = current_token
     next_token
     const = Constant.new nil, NilSingleton.instance, token.line_number
+    Immediate.new const, const.line_number
+  end
+
+  def string
+    return false if not current_token
+    return false if current_token_type != :string
+    token = current_token
+    next_token
+    const = Constant.new token.data, StringSingleton.instance, token.line_number
     Immediate.new const, const.line_number
   end
 end
