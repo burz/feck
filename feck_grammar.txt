@@ -2,8 +2,8 @@ instructions  = instruction {"\n" instruction}
 instruction   = assign | value | print | if | while | puts | func_def
 
 assign    = left_values "=" right_values
-print     = "print" value_list
-puts      = "puts" value_list
+print     = "print" rvalues
+puts      = "puts" rvalues
 if        = "if" low_boolean_expression "\n" instructions "\n"
             {"elif" low_boolean_expression "\n" instructions "\n"}
             ["else" instructions "\n"] "end"
@@ -17,7 +17,7 @@ right_values  = [value_list]
 value_list    = value {"," value}
 var_list      = variable {"," variable}
 
-value = low_boolean_expression | number_expression | string | call
+value = low_boolean_expression | number_expression | string
 
 low_boolean_expression  = low_boolean_term {"or" low_boolean_term}
 low_boolean_term        = low_boolean_factor {"and" low_boolean_factor}
@@ -25,12 +25,12 @@ low_boolean_factor      = ["not"] (condition | assign | high_boolean_expression)
 
 high_boolean_expression = high_boolean_term {"||" high_boolean_term}
 high_boolean_term       = high_boolean_factor {"&&" high_boolean_factor}
-high_boolean_factor     = ["!"] (boolean | nil | designator | "(" low_boolean_expression ")")
+high_boolean_factor     = ["!"] (boolean | nil | call | "(" low_boolean_expression ")")
 
 number_expression = ["-"] number_term {("+" | "-") number_term}
 number_term       = number_power {("*" | "/" | "%") number_power}
 number_power      = number_factor {"**" number_factor}
-number_factor     = number | designator | "(" (number_expression | assign) ")"
+number_factor     = number | call | "(" (number_expression | assign) ")"
 
 condition         = value_condition | number_condition
 value_condition   = condition_value ("is" | "==" | "!=" ) condition_value
@@ -40,7 +40,7 @@ number            = float | integer
 designator        = variable
 condition_value   = high_boolean_expression | number_expression | string
 
-variable  = (letter) {letter}
+variable  = ["$"] (letter) {letter}
 string    = """ {[^"] | "\""} """
 float     = integer "." integer
 integer   = decimal {decimal}

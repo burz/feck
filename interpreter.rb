@@ -101,14 +101,18 @@ class Interpreter
   end
 
   def do_puts(puts)
-    results = puts.expressions.each.map do |expression|
-      result = evaluate_expression(expression)[0]
-      if evaluate_expression(expression)[0] == nil
-        result = "nil"
+    if puts.expressions.size > 0
+      results = puts.expressions.each.map do |expression|
+        result = evaluate_expression(expression)[0]
+        if evaluate_expression(expression)[0] == nil
+          result = "nil"
+        end
+        result
       end
-      result
+      puts results
+    else
+      print "\n"
     end
-    puts results
   end
 
   def do_def(func_def)
@@ -122,9 +126,10 @@ class Interpreter
     @current_environment << Environment.new(definition.scope)
     if parameters
       parameters.each_with_index do |parameter, i|
+        parameter = evaluate_expression parameter
         entry = @current_environment[-1].find definition.parameters[i]
-        entry.value = parameter.value
-        entry.type_object = parameter.type_object
+        entry.value = parameter[0]
+        entry.type_object = parameter[1]
       end
     end
     do_instructions definition.instructions.instructions
@@ -190,6 +195,17 @@ class Interpreter
   def evaluate_expression(expression)
     if expression.child.class == Immediate
       @last_expression = expression.child.table_entry.value, expression.child.table_entry.type_object
+    elsif expression.child.class == Call
+      if expression.child.name[0] == ?$
+        variable = @global_environment.find expression.child.name
+      else
+        variable = @current_environment[-1].find expression.child.name
+      end
+      if variable.type_object == FunctionSingleton.instance
+        do_call variable.value, expression.child.parameters
+      else
+        @last_expression = variable.value, variable.type_object
+      end
     elsif expression.child.class == Location
       if expression.child.child.name[0] == ?$
         variable = @global_environment.find expression.child.child.name

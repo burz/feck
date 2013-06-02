@@ -116,9 +116,7 @@ class Parser
     return false if current_token_type != :print
     line = line_number
     next_token
-    if not values = value_list
-      raise ParseError.new "The 'print' on line #{line} is not followed by an expression"
-    end
+    values = right_values
     Print.new values, line
   end
 
@@ -127,9 +125,7 @@ class Parser
     return false if current_token_type != :puts
     line = line_number
     next_token
-    if not values = value_list
-      raise ParseError.new "The 'puts' on line #{line} is not followed by an expression"
-    end
+    values = right_values
     Puts.new values, line
   end
 
@@ -197,6 +193,7 @@ class Parser
     if current_token and current_token_type == :"("
       next_token
       parameters = var_list
+      parameters.map! { |p| p.name }
       next_token # Skips terminating ')'
     else
       parameters = false
@@ -212,6 +209,20 @@ class Parser
     loc = Location.new var, line
     func = Function.new name, parameters, instr, scope, line
     FunctionDefinition.new loc, func, line
+  end
+
+  def call
+    return false if not current_token or not current_token_type == :identifier
+    name = current_token.data
+    line = line_number
+    next_token
+    parameters = []
+    if current_token and current_token_type == :"("
+      next_token
+      parameters = value_list
+      next_token # Skip the ')'
+    end
+    Call.new name, parameters, line
   end
 
   def left_values
@@ -263,80 +274,6 @@ class Parser
       val = Expression.new str, str.line_number
     end
     val
-  end
-
-  def number_expression
-    return false if not current_token
-    old_position = @line_position
-    if current_token_type == :-
-      next_token
-      if not term = number_term
-        raise ParseError.new "The '-' on line #{line_number} is not followed by a term"
-      end
-      const = Constant.new  0, IntegerSingleton.instance, line_number
-      immed = Immediate.new const, const.line_number
-      expr = Expression.new immed, immed.line_number
-      binary = Binary.new expr, :"-", term, term.line_number
-      last_term = Expression.new binary, binary.line_number
-    else
-      if not last_term = number_term
-        @line_position = old_position
-        return false
-      end
-    end
-    while current_token and current_token_type == :+ || current_token_type == :-
-      operator = current_token_type
-      next_token
-      if not term = number_term
-        raise ParseError.new "The '#{operator.to_s}' on line #{line_number} is not followed by a term"
-      end
-      binary = Binary.new last_term, operator, term, term.line_number
-      last_term = Expression.new binary, binary.line_number
-    end
-    last_term
-  end
-
-  def number_term
-    return false if not last_factor = number_factor
-    while current_token and current_token_type == :* || current_token_type == :** ||
-          current_token_type == :/ || current_token_type == :%
-      operator = current_token_type
-      next_token
-      if not factor = number_factor
-        raise ParseError.new "The '#{token_at(@current_position - 1)}' is not followed by a factor in the expression on line #{line_number}"
-      end
-      binary = Binary.new last_factor, operator, factor, factor.line_number
-      last_factor = Expression.new binary, binary.line_number
-    end
-    last_factor
-  end
-
-  def number_factor
-    factor = number
-    if not factor
-      factor = designator
-      if not factor
-        if current_token_type == :"("
-          next_token
-          factor = number_expression
-          if not factor
-            factor = assign
-            if not factor
-              raise ParseError.new "The '(' on line #{line_number} is not followed by an expression"
-            else
-              factor = Expression.new factor, factor.line_number
-            end
-          end
-          if not current_token or not current_token_type == :")"
-            raise ParseError.new "The '(' on line #{line_number} is not followed by a ')'"
-          end
-          next_token
-        end
-      else
-        factor = Expression.new factor, factor.line_number
-      end
-    end
-    factor
   end
 
   def low_boolean_expression
@@ -430,7 +367,7 @@ class Parser
       next_token
       negated = true
     end
-    factor = boolean || nil_value || designator
+    factor = boolean || nil_value || call
     if not factor and current_token
       if current_token_type == :"("
         next_token
@@ -460,6 +397,80 @@ class Parser
       result = Expression.new result, result.line_number
     end
     result
+  end
+
+  def number_expression
+    return false if not current_token
+    old_position = @line_position
+    if current_token_type == :-
+      next_token
+      if not term = number_term
+        raise ParseError.new "The '-' on line #{line_number} is not followed by a term"
+      end
+      const = Constant.new  0, IntegerSingleton.instance, line_number
+      immed = Immediate.new const, const.line_number
+      expr = Expression.new immed, immed.line_number
+      binary = Binary.new expr, :"-", term, term.line_number
+      last_term = Expression.new binary, binary.line_number
+    else
+      if not last_term = number_term
+        @line_position = old_position
+        return false
+      end
+    end
+    while current_token and current_token_type == :+ || current_token_type == :-
+      operator = current_token_type
+      next_token
+      if not term = number_term
+        raise ParseError.new "The '#{operator.to_s}' on line #{line_number} is not followed by a term"
+      end
+      binary = Binary.new last_term, operator, term, term.line_number
+      last_term = Expression.new binary, binary.line_number
+    end
+    last_term
+  end
+
+  def number_term
+    return false if not last_factor = number_factor
+    while current_token and current_token_type == :* || current_token_type == :** ||
+          current_token_type == :/ || current_token_type == :%
+      operator = current_token_type
+      next_token
+      if not factor = number_factor
+        raise ParseError.new "The '#{token_at(@current_position - 1)}' is not followed by a factor in the expression on line #{line_number}"
+      end
+      binary = Binary.new last_factor, operator, factor, factor.line_number
+      last_factor = Expression.new binary, binary.line_number
+    end
+    last_factor
+  end
+
+  def number_factor
+    factor = number
+    if not factor
+      factor = call
+      if not factor
+        if current_token_type == :"("
+          next_token
+          factor = number_expression
+          if not factor
+            factor = assign
+            if not factor
+              raise ParseError.new "The '(' on line #{line_number} is not followed by an expression"
+            else
+              factor = Expression.new factor, factor.line_number
+            end
+          end
+          if not current_token or not current_token_type == :")"
+            raise ParseError.new "The '(' on line #{line_number} is not followed by a ')'"
+          end
+          next_token
+        end
+      else
+        factor = Expression.new factor, factor.line_number
+      end
+    end
+    factor
   end
 
   def condition

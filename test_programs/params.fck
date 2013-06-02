@@ -1,0 +1,8 @@
+def f(g, h)
+  print g, h
+  puts
+end
+
+f(5, 6)
+f(5 * 5, 6 * 6)
+

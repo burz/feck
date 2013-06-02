@@ -10,17 +10,17 @@ class Entry
 
   def new_node
     @@node_number += 1
-    "node#{@@node_number - 1}"
+    "node_symbol#{@@node_number - 1}"
   end
 
   def new_anchor
     @@anchor_number += 1
-    "anchor#{@@anchor_number - 1}"
+    "anchor_symbol#{@@anchor_number - 1}"
   end
 
   def new_cluster
     @@cluster_number += 1
-    "cluster#{@@cluster_number - 1}"
+    "cluster_symbol#{@@cluster_number - 1}"
   end
 end
 
@@ -85,7 +85,7 @@ class Function < Entry
         if not last_node
           puts "#{node} -> #{param_node} [label=\"parameters\"]"
         else
-          puts  "{rank=same;#{last_node}->#{param_node} [label=\"next\"];}"
+          puts  "{rank=same; #{last_node} -> #{param_node} [label=\"\"];}"
         end
         last_node = param_node
       end
@@ -125,7 +125,9 @@ class Scope < Entry
     @names.each do |name|
       node = new_node
       puts "#{node} [label=\"#{name}\",shape=box,color=white,fontcolor=black]"
+      puts "{rank=same; #{anchor} -> #{node} [style=invis];}"
     end
+    puts "label=\"#{scope_name}\""
     puts "}"
     anchor
   end
@@ -157,13 +159,7 @@ class SymbolTable
   def graphical
     puts "strict digraph X {"
     global_scope = @table[0].graphical
-    global = "__global"
-    puts "#{global} [label=\"Global\",shape=circle]"
-    puts "#{global} -> #{global_scope}"
     program_scope = @table[1].graphical
-    program = "__program"
-    puts "#{program} [label=\"Program\",shape=circle]"
-    puts "#{program} -> #{program_scope}"
     puts "}"
   end
 end

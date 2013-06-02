@@ -8,7 +8,7 @@ class SyntaxTreeNode
 
   def new_node
     @@number += 1
-    "node#{@@number - 1}"
+    "node_syntax#{@@number - 1}"
   end
 end
 
@@ -29,7 +29,7 @@ class Instructions < SyntaxTreeNode
         first = last
       else
         node = instruction.graphical
-        puts "{rank=same;#{last}->#{node} [label=\"next\"];}"
+        puts "{rank=same; #{last} -> #{node} [label=\"next\"];}"
         last = node
       end
     end
@@ -67,10 +67,14 @@ class Print < SyntaxTreeNode
 
   def graphical
     node = new_node
-    @expressions.each do |expression|
-      expr_node = expression.graphical
+    if @expressions.size > 0
+      @expressions.each do |expression|
+        expr_node = expression.graphical
+        puts "#{node} [label=\"Print\",shape=rectangle]"
+        puts "#{node} -> #{expr_node}"
+      end
+    else
       puts "#{node} [label=\"Print\",shape=rectangle]"
-      puts "#{node} -> #{expr_node}"
     end
     node
   end
@@ -256,10 +260,14 @@ class Puts < SyntaxTreeNode
 
   def graphical
     node = new_node
-    @expressions.each do |expression|
-      expr_node = expression.graphical
+    if @expressions.size > 0
+      @expressions.each do |expression|
+        expr_node = expression.graphical
+        puts "#{node} [label=\"Puts\",shape=rectangle]"
+        puts "#{node} -> #{expr_node}"
+      end
+    else
       puts "#{node} [label=\"Puts\",shape=rectangle]"
-      puts "#{node} -> #{expr_node}"
     end
     node
   end
@@ -276,6 +284,35 @@ class FunctionDefinition < SyntaxTreeNode
 
   def graphical
     definition.graphical
+  end
+end
+
+class Call < SyntaxTreeNode
+  attr_accessor :name, :parameters
+
+  def initialize(name, parameters, line_number)
+    @name = name
+    @parameters = parameters
+    @line_number = line_number
+  end
+
+  def graphical
+    node = new_node
+    puts "#{node} [label=\"Call\",shape=rectangle]"
+    name_node = new_node
+    puts "#{name_node} [label=\"#{name}\"]"
+    puts "#{node} -> #{name_node}"
+    last_node = false
+    parameters.each do |parameter|
+      param_node = parameter.graphical
+      if not last_node
+        puts "#{name_node} -> #{param_node} [label=\"parameters\"]"
+      else
+        puts  "{rank=same; #{last_node} -> #{param_node} [label=\"\"];}"
+      end
+      last_node = param_node
+    end
+    node
   end
 end
 
