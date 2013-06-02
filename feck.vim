@@ -2,7 +2,7 @@ if exists("b:current_syntax")
   finish
 endif
 
-syn keyword feckControlFlow if elif else end while
+syn keyword feckControlFlow if elif else end while def
 syn keyword feckKernelFunc print puts
 syn keyword feckValue true false nil
 syn keyword feckOp or and not is
@@ -10,8 +10,9 @@ syn keyword feckOp or and not is
 syn match feckInt /[0-9]*/
 syn match feckFloat /[0-9][0-9]*[.][0-9][0-9]*/
 syn match feckGlobalVar /[$][A-Za-z][A-Za-z0-9_]*/
-syn match feckString /["]([^"] | [\\]["])*["]/
 syn match feckComment /[#].*/
+
+syn region feckString start='"' skip='\\"' end='"'
 
 hi def link feckControlFlow Keyword
 hi def link feckKernelFunc Function

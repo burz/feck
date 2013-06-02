@@ -2,6 +2,13 @@ Feck - An interpreted language written in Ruby
 
 Author: Anthony Burzillo
 
+This project includes the following executables:
+
+feck - The interpreter
+ifk  - An interactive interpreter
+pics - Creates images of the symbol table and syntax tree of a program (with graphviz installed)
+all  - Runs pics and feck
+
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
 The MIT License (MIT)

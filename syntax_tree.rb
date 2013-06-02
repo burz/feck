@@ -265,6 +265,20 @@ class Puts < SyntaxTreeNode
   end
 end
 
+class FunctionDefinition < SyntaxTreeNode
+  attr_accessor :location, :definition
+
+  def initialize(location, definition, line_number)
+    @location = location
+    @definition = definition
+    @line_number = line_number
+  end
+
+  def graphical
+    definition.graphical
+  end
+end
+
 class SyntaxTree
   attr_accessor :tree
 

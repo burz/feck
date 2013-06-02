@@ -47,6 +47,8 @@ class Interpreter
         do_puts instruction
       elsif instruction.class == Expression
         evaluate_expression instruction
+      elsif instruction.class == FunctionDefinition
+        do_def instruction
       else
         $stderr.puts "did not recognize instruction"
       end
@@ -107,6 +109,26 @@ class Interpreter
       result
     end
     puts results
+  end
+
+  def do_def(func_def)
+    destination = evaluate_location func_def.location
+    destination.value = func_def.definition
+    destination.type_object = FunctionSingleton.instance
+  end
+
+  def do_call(definition, parameters = false)
+    @last_expression = nil, NilSingleton.instance
+    @current_environment << Environment.new(definition.scope)
+    if parameters
+      parameters.each_with_index do |parameter, i|
+        entry = @current_environment[-1].find definition.parameters[i]
+        entry.value = parameter.value
+        entry.type_object = parameter.type_object
+      end
+    end
+    do_instructions definition.instructions.instructions
+    @current_environment.pop
   end
 
   def evaluate_location(location)
@@ -174,7 +196,11 @@ class Interpreter
       else
         variable = @current_environment[-1].find expression.child.child.name
       end
-      @last_expression = variable.value, variable.type_object
+      if variable.type_object == FunctionSingleton.instance
+        do_call variable.value
+      else
+        @last_expression = variable.value, variable.type_object
+      end
     elsif expression.child.class == Binary
       @last_expression = evaluate_binary(expression.child)
     elsif expression.child.class == Not

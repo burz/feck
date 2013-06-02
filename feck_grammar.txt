@@ -1,20 +1,23 @@
 instructions  = instruction {"\n" instruction}
-instruction   = assign | value | print | if | while | puts
+instruction   = assign | value | print | if | while | puts | func_def
 
-assign  = left_values "=" right_values
-print   = "print" value_list
-puts    = "puts" value_list
-if      = "if" low_boolean_expression "\n" instructions "\n"
-          {"elif" low_boolean_expression "\n" instructions "\n"}
-          ["else" instructions "\n"] "end"
-while   = "while" condition "\n" instructions "\n" "end"
-call    = designator ["(" [value_list] ")"}]
+assign    = left_values "=" right_values
+print     = "print" value_list
+puts      = "puts" value_list
+if        = "if" low_boolean_expression "\n" instructions "\n"
+            {"elif" low_boolean_expression "\n" instructions "\n"}
+            ["else" instructions "\n"] "end"
+while     = "while" condition "\n" instructions "\n" "end"
+func_def  = "def" designator ["(" [var_list] ")"] "\n"
+            [instructions] "\n" "end"
+call      = designator ["(" [value_list] ")"}]
 
 left_values   = designator {"," designator}
 right_values  = [value_list]
+value_list    = value {"," value}
+var_list      = variable {"," variable}
 
-value_list = value {"," value}
-value = low_boolean_expression | number_expression | string
+value = low_boolean_expression | number_expression | string | call
 
 low_boolean_expression  = low_boolean_term {"or" low_boolean_term}
 low_boolean_term        = low_boolean_factor {"and" low_boolean_factor}
@@ -34,18 +37,18 @@ value_condition   = condition_value ("is" | "==" | "!=" ) condition_value
 number_condition  = number_expression (">" | "<" | ">=" | "<=") number_expression
 
 number            = float | integer
-designator        = variable | constant
+designator        = variable
 condition_value   = high_boolean_expression | number_expression | string
 
-constant  = uppercase [variable]
-variable  = lowercase {uppercase | lowercase}
+variable  = (letter) {letter}
 string    = """ {[^"] | "\""} """
 float     = integer "." integer
 integer   = decimal {decimal}
 
+letter    = uppercase | lowercase
 uppercase = "A" | "B" | ... | "Z"
 lowercase = "a" | "b" | ... | "z"
 boolean   = "true" | "false"
-nil       = "nil"
+nil_value = "nil"
 decimal   = "0" | "1" | ... | "9"
 

@@ -1,0 +1,6 @@
+def f
+  puts "It works!"
+end
+
+f
+

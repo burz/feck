@@ -20,3 +20,7 @@ class StringSingleton
   include Singleton
 end
 
+class FunctionSingleton
+  include Singleton
+end
+

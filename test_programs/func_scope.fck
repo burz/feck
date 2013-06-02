@@ -1,0 +1,10 @@
+a = "Yes!"
+
+def f
+  a = "No!"
+end
+
+f
+
+puts a
+
