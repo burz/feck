@@ -14,7 +14,8 @@ pics - Creates images of the symbol table and syntax tree of a program (with gra
 
 all  - Runs pics and feck
 
-:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+License
+-----------------------------------------------------------------------------
 
 The MIT License (MIT)
 

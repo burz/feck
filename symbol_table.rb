@@ -75,15 +75,18 @@ class Function < Entry
   end
 
   def graphical
-    node = name
-    puts "#{node}"
+    node = new_node
+    puts "#{node} [label=\"Def\",shape=rectangle]"
+    func_node = new_node
+    puts "#{func_node} [label=\"#{name}\"]"
+    puts "#{node} -> #{func_node}"
     last_node = false
     if parameters
       parameters.each do |parameter|
         param_node = new_node
         puts "#{param_node} [label=\"#{parameter}\",shape=rectangle]"
         if not last_node
-          puts "#{node} -> #{param_node} [label=\"parameters\"]"
+          puts "#{func_node} -> #{param_node} [label=\"parameters\"]"
         else
           puts  "{rank=same; #{last_node} -> #{param_node} [label=\"\"];}"
         end
@@ -92,7 +95,7 @@ class Function < Entry
     end
     if instructions
       instr_node = instructions.graphical
-      puts "#{node} -> #{instr_node} [label=\"instructions\"]"
+      puts "#{func_node} -> #{instr_node} [label=\"instructions\"]"
     end
     node
   end

@@ -1,0 +1,8 @@
+$a = 65
+
+def $g
+  puts $a
+end
+
+$g
+
