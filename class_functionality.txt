@@ -1,3 +1,17 @@
+::::::::::::
+   String
+::::::::::::
+
+string = """ ([^"] | "\"") """
+
+Basic functionality:
+
+[x] - Access the character at location x
+[x:y] - Access the substring from position x to y exclusive
+.size | .length - Returns the size of the string
+.append(x) - Add x to the end of the string
+.find(x) - Return the index of the fist appearance of x in the string
+
 :::::::::::::
     Array
 :::::::::::::

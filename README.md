@@ -1,8 +1,10 @@
 Feck - An interpreted language written in Ruby
+-----------------------------------------------------------------------------
 
 Author: Anthony Burzillo
 
 This project includes the following executables:
+-----------------------------------------------------------------------------
 
 feck - The interpreter
 
