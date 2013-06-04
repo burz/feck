@@ -1,19 +1,54 @@
-Feck - An interpreted language written in Ruby
+feck - An interpreted language written in Ruby
 ==============================================
 
 Author: Anthony Burzillo
 
-**********************************************
+******
+
+## Language
+
+feck is a dynamically-typed, interpreted language. Some examples of feck features
+include parallel assignment and boolean operators with precedence.
+
+```shell
+$ cat > test.fck
+a, b, c = 5, "Hello, there"
+puts a, b, c
+$ ./feck test.fck
+5
+Hello, there
+nil
+```
+
+```shell
+$ cat > test.fck
+x = 5
+if x < 4
+  puts 1
+elif true || false and true && false
+  puts 2
+end
+$ ./feck test.fck
+false
+```
+
+To see the most current possibilites in feck, see its grammar in EBNF for in
+feck_grammar.txt
 
 ## Execuatables
 
-### feck
+Example program:
 
 ```shell
 $ cat > test.fck
 puts true and
 false
 ```
+
+See test_programs/ for more examples.
+
+### feck
+
 
 Print out the tokens of the program:
 
