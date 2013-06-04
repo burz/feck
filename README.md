@@ -5,8 +5,7 @@ Author: Anthony Burzillo
 
 **********************************************
 
-Execuatables
-============
+## Execuatables
 
 ### feck
 
@@ -77,8 +76,7 @@ puts@1 | true@1 | and@1 | false@2
 false
 ```
 
-License
-=======
+## License
 
 The MIT License (MIT)
 
