@@ -27,9 +27,11 @@ if x < 4
   puts 1
 elif true || false and true && false
   puts 2
+else
+  puts 3 * 2.5
 end
 $ ./feck test.fck
-false
+7.5
 ```
 
 To see the most current possibilites in feck, see its grammar in EBNF for in
