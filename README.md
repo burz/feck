@@ -1,21 +1,84 @@
 Feck - An interpreted language written in Ruby
------------------------------------------------------------------------------
+==============================================
 
 Author: Anthony Burzillo
 
-This project includes the following executables:
------------------------------------------------------------------------------
+**********************************************
 
-feck - The interpreter
+Execuatables
+============
 
-ifk  - An interactive interpreter
+### feck
 
-pics - Creates images of the symbol table and syntax tree of a program (with graphviz installed)
+```shell
+$ cat > test.fck
+puts true and
+false
+```
 
-all  - Runs pics and feck
+Print out the tokens of the program:
+
+```shell
+$ ./feck -l
+puts@1 | true@1 | and@1 | false@2
+```
+
+Create a representation of the symbol table of the program (with [dot] installed):
+
+[dot]: http://www.graphviz.org/
+
+```shell
+$ ./feck -t test.fck | dot -T jpeg > table.jpg
+```
+
+Create a representation of the abstract syntax tree of the program (with [dot] installed):
+
+```shell
+$ ./feck -a test.fck | dot -T jpeg > tree.jpg
+```
+
+Run a program:
+
+```shell
+$ ./feck test.fck
+false
+```
+
+### ifk - an interactive interpreter
+
+Example usage (quit with ctrl-d):
+
+```shell
+$ ./ifk
+ifk:1  > puts true and
+ifk:2 ?> false
+false
+=> false
+```
+
+The value following the '=>' is the result of the last expression evaluated.
+
+### pics
+
+Creates the symbol table and abstract syntax tree
+
+```shell
+$ ./pics test.fck
+```
+
+### all
+
+Run all four options of feck in order
+
+```shell
+$ ./all test.fck
+puts@1 | true@1 | and@1 | false@2
+======OUTPUT======
+false
+```
 
 License
------------------------------------------------------------------------------
+=======
 
 The MIT License (MIT)
 
