@@ -1,5 +1,5 @@
 instructions  = instruction {"\n" instruction}
-instruction   = assign | value | print | if | while | puts | func_def
+instruction   = assign | value | print | if | while | puts | func_def | gets
 
 assign    = left_values "=" right_values
 print     = "print" rvalues
@@ -11,13 +11,14 @@ while     = "while" condition "\n" instructions "\n" "end"
 func_def  = "def" designator ["(" [var_list] ")"] "\n"
             [instructions] "\n" "end"
 call      = designator ["(" [value_list] ")"}]
+gets      = "gets"
 
 left_values   = designator {"," designator}
 right_values  = [value_list]
 value_list    = value {"," value}
 var_list      = variable {"," variable}
 
-value = low_boolean_expression | number_expression | string
+value = low_boolean_expression | number_expression | string | gets
 
 low_boolean_expression  = low_boolean_term {"or" low_boolean_term}
 low_boolean_term        = low_boolean_factor {"and" low_boolean_factor}
@@ -38,7 +39,7 @@ number_condition  = number_expression (">" | "<" | ">=" | "<=") number_expressio
 
 number            = float | integer
 designator        = variable
-condition_value   = high_boolean_expression | number_expression | string
+condition_value   = high_boolean_expression | number_expression | string | gets
 
 variable  = ["$"] (letter) {letter}
 string    = """ {[^"] | "\""} """

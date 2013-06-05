@@ -3,7 +3,7 @@ if exists("b:current_syntax")
 endif
 
 syn keyword feckControlFlow if elif else end while def
-syn keyword feckKernelFunc print puts
+syn keyword feckKernelFunc print puts gets
 syn keyword feckValue true false nil
 syn keyword feckOp or and not is
 

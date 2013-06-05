@@ -26,7 +26,7 @@ class Scanner
                 :"!", :"||", :"&&", :not, :or, :and,
                 :if, :elif, :else, :end, :is, :==,
                 :"!=", :>, :<, :>=, :<=, :while,
-                :puts, :**, :def]
+                :puts, :**, :def, :gets]
 
   @@NUMBER_OPS = [:-, :+, :*, :**, :/, :%]
 

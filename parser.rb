@@ -71,7 +71,7 @@ class Parser
 
   def instruction
     assign || value || print_statement || if_statement ||
-    while_statement || puts_statement || func_def
+    while_statement || puts_statement || func_def || gets_statement
   end
 
   def assign
@@ -225,6 +225,13 @@ class Parser
     Call.new name, parameters, line
   end
 
+  def gets_statement
+    return false if not current_token
+    return false if not current_token_type == :gets
+    next_token
+    Gets.new line_number
+  end
+
   def left_values
     return false if not des = designator
     locations = [des]
@@ -270,7 +277,7 @@ class Parser
 
   def value
     val = low_boolean_expression || number_expression
-    if not val and str = string
+    if not val and str = string || gets_statement
       val = Expression.new str, str.line_number
     end
     val
@@ -525,7 +532,7 @@ class Parser
 
   def condition_value
     condition_value = number_expression || high_boolean_expression
-    if not condition_value and str = string
+    if not condition_value and str = string || gets_statement
       condition_value = Expression.new str, str.line_number
     end
     condition_value

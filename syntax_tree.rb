@@ -316,6 +316,19 @@ class Call < SyntaxTreeNode
   end
 end
 
+class Gets < SyntaxTreeNode
+
+  def initialize(line_number)
+    @line_number = line_number
+  end
+
+  def graphical
+    node = new_node
+    puts "#{node} [label=\"Gets\",shape=rectangle]"
+    node
+  end
+end
+
 class SyntaxTree
   attr_accessor :tree
 

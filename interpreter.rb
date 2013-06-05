@@ -49,6 +49,8 @@ class Interpreter
         evaluate_expression instruction
       elsif instruction.class == FunctionDefinition
         do_def instruction
+      elsif instruction.class == Gets
+        @last_expression = $stdin.gets
       else
         $stderr.puts "did not recognize instruction"
       end
@@ -227,6 +229,8 @@ class Interpreter
       @last_expression = !result[0], result[1]
     elsif expression.child.class == Condition
       @last_expression = evaluate_condition(expression.child), BooleanSingleton.instance
+    elsif expression.child.class == Gets
+      @last_expression = $stdin.gets, StringSingleton.instance
     else
       $stderr.puts "undefined expression #{expression.child}"
       @last_expression = nil
