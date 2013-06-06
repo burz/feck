@@ -9,12 +9,6 @@ end
 class Interpreter
   attr_accessor :last_expression
 
-  def initialize(symbol_table, syntax_tree)
-    @symbol_table = symbol_table
-    @syntax_tree = syntax_tree
-    @last_expression = Value.new nil, NilSingleton.instance
-  end
-
   def is_number?(class_object)
     class_object == FloatSingleton.instance or class_object == IntegerSingleton.instance
   end
@@ -23,14 +17,39 @@ class Interpreter
     class_object == BooleanSingleton.instance or class_object == NilSingleton.instance
   end
 
-  def run
+  def run(symbol_table, syntax_tree)
+    @symbol_table = symbol_table
+    @syntax_tree = syntax_tree
+    @last_expression = Value.new nil, NilSingleton.instance
     @global_environment = Environment.new @symbol_table.table[0]
     @current_environment = [Environment.new(@symbol_table.table[1])]
     do_instructions @syntax_tree.tree.instructions
   end
 
-  def continue_execution(instructions)
-    #TODO continue execution from environment
+  def migrate_environment_and_run(symbol_table, syntax_tree)
+    @symbol_table = symbol_table
+    @syntax_tree = syntax_tree
+    if @global_environment
+      new_global_environment = Environment.new @symbol_table.table[0]
+      new_current_environment = [Environment.new(@symbol_table.table[1])]
+      @global_environment.values.each do |name, state|
+        variable = new_global_environment.find(name)
+        variable.value = state.value
+        variable.type_object = state.type_object
+      end
+      @current_environment[0].values.each do |name, state|
+        variable = new_current_environment[0].find(name)
+        variable.value = state.value
+        variable.type_object = state.type_object
+      end
+      @global_environment = new_global_environment
+      @current_environment = new_current_environment
+    else
+      @last_expression = Value.new nil, NilSingleton.instance
+      @global_environment = Environment.new @symbol_table.table[0]
+      @current_environment = [Environment.new(@symbol_table.table[1])]
+    end
+    do_instructions @syntax_tree.tree.instructions
   end
 
   def do_instructions(instructions)

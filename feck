@@ -15,20 +15,20 @@ begin
     when "-l"
       scanner = Scanner.new
       scanner.scan_file ARGV[1]
-      scanner.tokenized_lines.each { |x| puts x.join(" | ") }
+      scanner.tokenized_lines.each { |line| puts line.join(" | ") }
     when "-t"
       scanner = Scanner.new
       scanner.scan_file ARGV[1]
       lines = scanner.tokenized_lines
       parser = Parser.new lines
-      parser.parse
+      parser.parse_lines lines
       parser.symbol_table.graphical
     when "-a"
       scanner = Scanner.new
       scanner.scan_file ARGV[1]
       lines = scanner.tokenized_lines
-      parser = Parser.new lines
-      parser.parse
+      parser = Parser.new
+      parser.parse_lines lines
       parser.syntax_tree.graphical
     else
       puts $FECK_USAGE
@@ -37,10 +37,10 @@ begin
     scanner = Scanner.new
     scanner.scan_file ARGV[0]
     lines = scanner.tokenized_lines
-    parser = Parser.new lines
-    parser.parse
-    interpreter = Interpreter.new parser.symbol_table, parser.syntax_tree
-    interpreter.run
+    parser = Parser.new
+    parser.parse_lines lines
+    interpreter = Interpreter.new
+    interpreter.run parser.symbol_table, parser.syntax_tree
   end
 rescue ScannerError => e
   $stderr.puts "\e[31m\e[1merror: #{e}\e[0m"

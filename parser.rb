@@ -9,12 +9,13 @@ end
 class Parser
   attr_accessor :symbol_table, :syntax_tree
 
-  def initialize(tokenized_lines)
-    @tokenized_lines = tokenized_lines
+  def initialize
     @symbol_table = SymbolTable.new
   end
 
   def token_at(position)
+    return false if not @tokenized_lines
+    return false if not @tokenized_lines[@current_line]
     @tokenized_lines[@current_line][position]
   end
 
@@ -23,10 +24,15 @@ class Parser
   end
 
   def current_token
+    return false if not @tokenized_lines
+    return false if not @tokenized_lines[@current_line]
     @tokenized_lines[@current_line][@line_position]
   end
 
   def current_token_type
+    return false if not @tokenized_lines
+    return false if not @tokenized_lines[@current_line]
+    return false if not @tokenized_lines[@current_line][@line_position]
     @tokenized_lines[@current_line][@line_position].token_type
   end
 
@@ -38,7 +44,8 @@ class Parser
     @current_line + 1
   end
 
-  def parse
+  def parse_lines(tokenized_lines)
+    @tokenized_lines = tokenized_lines
     @current_line = 0
     instructs = instructions
     if @current_line < @tokenized_lines.size
@@ -79,7 +86,7 @@ class Parser
     line = line_number
     old_position = @line_position
     if left = left_values
-      if current_token and current_token_type == :"="
+      if current_token_type == :"="
         next_token
         right = [] if (right = right_values) == false
         assignments = []
@@ -112,8 +119,7 @@ class Parser
   end
 
   def print_statement
-    return false if not token_at @line_position
-    return false if current_token_type != :print
+    return false if not current_token_type == :print
     line = line_number
     next_token
     values = right_values
@@ -121,8 +127,7 @@ class Parser
   end
 
   def puts_statement
-    return false if not token_at @line_position
-    return false if current_token_type != :puts
+    return false if not current_token_type == :puts
     line = line_number
     next_token
     values = right_values
@@ -130,7 +135,6 @@ class Parser
   end
 
   def if_statement(name = :if)
-    return false if not current_token
     return false if not current_token_type == name
     line = line_number
     next_token
@@ -146,13 +150,13 @@ class Parser
       end
     end
     instructions_false = false
-    if name == :if and current_token and current_token_type == :else
+    if name == :if and current_token_type == :else
       next_token
       @current_line += 1
       instructions_false = instructions
     end
     if name == :if
-      if not current_token or current_token_type != :end
+      if not current_token_type == :end
         raise ParseError.new "The '#{name}' on line #{line} is not terminated by an 'end'"
       end
       next_token
@@ -162,7 +166,6 @@ class Parser
   end
 
   def while_statement
-    return false if not current_token
     return false if not current_token_type == :while
     line = line_number
     next_token
@@ -171,7 +174,7 @@ class Parser
     end
     @current_line += 1
     instr = instructions
-    if not current_token or current_token_type != :end
+    if not current_token_type == :end
       raise ParseError.new "The 'while' on line #{line} is not terminated by an 'end'"
     end
     next_token
@@ -179,7 +182,6 @@ class Parser
   end
 
   def func_def
-    return false if not current_token
     return false if not current_token_type == :def
     line = line_number
     next_token
@@ -190,7 +192,7 @@ class Parser
     next_token
     @symbol_table.add_to_scope name
     @symbol_table.push_scope name
-    if current_token and current_token_type == :"("
+    if current_token_type == :"("
       next_token
       parameters = var_list
       parameters.map! { |p| p.name }
@@ -200,7 +202,7 @@ class Parser
     end
     @current_line += 1
     instr = instructions
-    if not current_token or not current_token_type == :end
+    if not current_token_type == :end
       raise ParseError.new "The 'def' on line #{line} is not followed by an end"
     end
     next_token
@@ -212,12 +214,12 @@ class Parser
   end
 
   def call
-    return false if not current_token or not current_token_type == :identifier
+    return false if not current_token_type == :identifier
     name = current_token.data
     line = line_number
     next_token
     parameters = []
-    if current_token and current_token_type == :"("
+    if current_token_type == :"("
       next_token
       parameters = value_list
       next_token # Skip the ')'
@@ -226,7 +228,6 @@ class Parser
   end
 
   def gets_statement
-    return false if not current_token
     return false if not current_token_type == :gets
     next_token
     Gets.new line_number
@@ -235,7 +236,7 @@ class Parser
   def left_values
     return false if not des = designator
     locations = [des]
-    while current_token and current_token_type == :","
+    while current_token_type == :","
       next_token
       if not des = designator
         raise ParseError.new "The ',' in the left_values on line #{line_number} is not followed by a designator"
@@ -252,7 +253,7 @@ class Parser
   def value_list
     return false if not val = value
     values = [val]
-    while current_token and current_token_type == :","
+    while current_token_type == :","
       next_token
       if not val = value
         raise ParseError.new "The ',' on line #{line_number} is not follwed by a value"
@@ -265,7 +266,7 @@ class Parser
   def var_list
     return false if not var = variable
     vars = [var]
-    while current_token and current_token_type == :","
+    while current_token_type == :","
       next_token
       if not var = variable
         raise ParseError.new "The ',' on line #{line_number} is not followed by a variable"
@@ -284,9 +285,8 @@ class Parser
   end
 
   def low_boolean_expression
-    return false if not current_token
     return false if not last_term = low_boolean_term
-    while current_token and current_token_type == :or
+    while current_token_type == :or
       next_token
       if not term = low_boolean_term
         raise ParseError.new "The 'or' on line #{line_number} is not followed by a term"
@@ -298,9 +298,8 @@ class Parser
   end
 
   def low_boolean_term
-    return false if not current_token
     return false if not last_factor = low_boolean_factor
-    while current_token and current_token_type == :and
+    while current_token_type == :and
       next_token
       if not factor = low_boolean_factor
         raise ParseError.new "The 'and' on line #{line_number} is not followed by a factor"
@@ -314,7 +313,7 @@ class Parser
   def low_boolean_factor
     old_position = @line_position
     negated = false
-    if current_token and current_token_type == :not
+    if current_token_type == :not
       next_token
       negated = true
     end
@@ -338,9 +337,8 @@ class Parser
   end
 
   def high_boolean_expression
-    return false if not current_token
     return false if not last_term = high_boolean_term
-    while current_token and current_token_type == :"||"
+    while current_token_type == :"||"
       next_token
       if not term = high_boolean_term
         raise ParseError.new "The '||' on line #{line_number} is not followed by a term"
@@ -352,9 +350,8 @@ class Parser
   end
 
   def high_boolean_term
-    return false if not current_token
     return false if not last_factor = high_boolean_factor
-    while current_token and current_token_type == :"&&"
+    while current_token_type == :"&&"
       next_token
       if not factor = high_boolean_factor
         raise ParseError.new "The '&&' on line #{line_number} is not followed by a factor"
@@ -366,7 +363,6 @@ class Parser
   end
 
   def high_boolean_factor
-    return false if not current_token
     return false if Scanner.number_operator? next_token_type
     old_position = @line_position
     negated = false
@@ -375,7 +371,7 @@ class Parser
       negated = true
     end
     factor = boolean || nil_value || call
-    if not factor and current_token
+    if not factor
       if current_token_type == :"("
         next_token
         if not result = low_boolean_expression
@@ -425,7 +421,7 @@ class Parser
         return false
       end
     end
-    while current_token and current_token_type == :+ || current_token_type == :-
+    while current_token_type == :+ || current_token_type == :-
       operator = current_token_type
       next_token
       if not term = number_term
@@ -439,7 +435,7 @@ class Parser
 
   def number_term
     return false if not last_factor = number_factor
-    while current_token and current_token_type == :* || current_token_type == :** ||
+    while current_token_type == :* || current_token_type == :** ||
           current_token_type == :/ || current_token_type == :%
       operator = current_token_type
       next_token
@@ -468,7 +464,7 @@ class Parser
               factor = Expression.new factor, factor.line_number
             end
           end
-          if not current_token or not current_token_type == :")"
+          if not current_token_type == :")"
             raise ParseError.new "The '(' on line #{line_number} is not followed by a ')'"
           end
           next_token
@@ -486,11 +482,9 @@ class Parser
 
   def value_condition
     old_position = @line_position
-    return false if not current_token
     return false if not left = condition_value
-    if not current_token or
-          (current_token_type != :is and current_token_type != :== and
-           current_token_type != :"!=")
+    if current_token_type != :is and current_token_type != :== and
+       current_token_type != :"!="
       @line_position = old_position
       return false
     end
@@ -504,11 +498,9 @@ class Parser
 
   def number_condition
     old_position = @line_position
-    return false if not current_token
     return false if not left = number_expression
-    if not current_token or
-          (current_token_type != :> and current_token_type != :< and
-           current_token_type != :>= and current_token_type != :<=)
+    if current_token_type != :> and current_token_type != :< and
+       current_token_type != :>= and current_token_type != :<=
       @line_position = old_position
       return false
     end
@@ -549,7 +541,6 @@ class Parser
   end
 
   def string
-    return false if not current_token
     return false if current_token_type != :string
     token = current_token
     next_token
@@ -558,7 +549,6 @@ class Parser
   end
 
   def float
-    return false if not current_token
     return false if current_token_type != :float
     token = current_token
     next_token
@@ -567,7 +557,6 @@ class Parser
   end
 
   def integer
-    return false if not current_token
     return false if current_token_type != :integer
     token = current_token
     next_token
@@ -576,7 +565,6 @@ class Parser
   end
 
   def boolean
-    return false if not current_token
     return false if current_token_type != :true and current_token_type != :false
     token = current_token
     value = current_token_type == :true
@@ -586,7 +574,6 @@ class Parser
   end
 
   def nil_value
-    return false if not current_token
     return false if current_token_type != :nil
     token = current_token
     next_token
@@ -595,7 +582,6 @@ class Parser
   end
 
   def identifier
-    return false if not current_token
     return false if current_token_type != :identifier
     next_token
     token_at(@line_position - 1)

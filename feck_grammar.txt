@@ -41,7 +41,8 @@ number            = float | integer
 designator        = variable
 condition_value   = high_boolean_expression | number_expression | string | gets
 
-variable  = ["$"] (letter) {letter}
+variable  = ["$"] identifier
+identifier = (letter) {letter | decimal}
 string    = """ {[^"] | "\""} """
 float     = integer "." integer
 integer   = decimal {decimal}

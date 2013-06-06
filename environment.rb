@@ -8,6 +8,8 @@ class Value
 end
 
 class Environment
+  attr_accessor :values
+
   def initialize(scope)
     @values = {}
     scope.names.each do |x|
