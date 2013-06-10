@@ -112,7 +112,7 @@ class Scanner
           @new_tokens << to_token(string_buffer)
         end
         string_buffer = line[@line_position, 1]
-      elsif @unclosed_parentheses > 0 and line[@line_position, 1] == ")"
+      elsif line[@line_position, 1] == ")"
         @unclosed_parentheses -= 1
         if @unclosed_parentheses < 0
           raise ScannerError.new "Unexpected close of parenthesis on line #{@line_number}"
