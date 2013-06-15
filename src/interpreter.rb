@@ -1,7 +1,7 @@
-require 'basic_data_types'
-require 'symbol_table'
-require 'syntax_tree'
-require 'environment'
+require File.expand_path '../basic_data_types', __FILE__
+require File.expand_path '../symbol_table', __FILE__
+require File.expand_path '../syntax_tree', __FILE__
+require File.expand_path '../environment', __FILE__
 
 class InterpreterError < StandardError
 end

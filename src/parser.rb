@@ -1,7 +1,7 @@
-require 'scanner'
-require 'basic_data_types'
-require 'symbol_table'
-require 'syntax_tree'
+require File.expand_path '../scanner', __FILE__
+require File.expand_path '../basic_data_types', __FILE__
+require File.expand_path '../symbol_table', __FILE__
+require File.expand_path '../syntax_tree', __FILE__
 
 class ParseError < StandardError
 end

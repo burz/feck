@@ -1,9 +1,9 @@
 #!/usr/bin/ruby
 
-require 'scanner'
-require 'parser'
-require 'symbol_table'
-require 'interpreter'
+require 'src/scanner'
+require 'src/parser'
+require 'src/symbol_table'
+require 'src/interpreter'
 
 class IFKError < StandardError
 end
