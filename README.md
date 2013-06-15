@@ -35,7 +35,7 @@ $ ./feck test.fck
 ```
 
 To see the most current possibilites in feck, see its grammar in EBNF for in
-feck_grammar.txt
+doc/feck_grammar.txt
 
 ## Execuatables
 
