@@ -33,7 +33,7 @@ class Scanner
   @@LINE_CONCATENATORS = [:",", :-, :+, :*, :**, :/, :%, :"!", :"||",
                           :"&&", :not, :or, :and, :if, :elif,
                           :is, :==, :"!=", :>, :<, :>=, :<=,
-                          :while, :**]
+                          :while]
 
   attr_accessor :tokenized_lines, :new_tokens
 
@@ -154,8 +154,7 @@ class Scanner
         (string_buffer =~ /^[0-9]+[.][0-9]*/ and char =~ /[0-9]/) or
         (string_buffer =~ /^[0-9]*$/ and char =~ /[0-9]/) or
         (string_buffer =~ /^[!><=]$/ and char == "=") or
-        (string_buffer =~ /^["]([^"] | [\\]["])*/ and char != "\"") or
-        (string_buffer =~ /^["]([^"] | [\\]["])*/ and char == "\"") or
+        (string_buffer =~ /^["]([^"] | [\\]["])*/) or
         (string_buffer == "|" and char == "|") or
         (string_buffer == "&" and char == "&") or
         (string_buffer == "*" and char == "*")
