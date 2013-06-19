@@ -20,7 +20,7 @@ begin
       scanner = Scanner.new
       scanner.scan_file ARGV[1]
       lines = scanner.tokenized_lines
-      parser = Parser.new lines
+      parser = Parser.new
       parser.parse_lines lines
       parser.symbol_table.graphical
     when "-a"

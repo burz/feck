@@ -150,9 +150,8 @@ class Scanner
 
   def new_token?(string_buffer, char)
     if (string_buffer =~ /^[$]?[A-Za-z0-9_]*$/ and char =~ /[A-Za-z0-9_]/) or
-        (string_buffer =~ /^[0-9]+/ and char =~ /[0-9.]/) or
         (string_buffer =~ /^[0-9]+[.][0-9]*/ and char =~ /[0-9]/) or
-        (string_buffer =~ /^[0-9]*$/ and char =~ /[0-9]/) or
+        (string_buffer =~ /^[0-9]*$/ and char =~ /[0-9.]/) or
         (string_buffer =~ /^[!><=]$/ and char == "=") or
         (string_buffer =~ /^["]([^"] | [\\]["])*/) or
         (string_buffer == "|" and char == "|") or
