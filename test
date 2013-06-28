@@ -1,0 +1,28 @@
+#!/usr/bin/ruby
+
+TEST_DIR = 'test_programs/'
+
+test_names = Dir["#{TEST_DIR}*.fck"].map { |s| s.match(/\/([A-Za-z0-9_]*)/)[1] }
+
+succesful_tests = 0
+failed_tests = 0
+
+test_names.each do |name|
+  error = `./feck #{ARGV[0]} #{TEST_DIR + name}.fck 2>&1`
+  status = $?.exitstatus
+  if status == 0
+    puts "\e[32m$$  Test '#{name}' was successful.\e[0m"
+    succesful_tests += 1
+  else
+    puts "\e[31m!!  Test '#{name}' failed with output:\e[0m"
+    puts "^^  #{error.chomp.gsub /\n/, "\n^^  "}"
+    failed_tests += 1
+  end
+end
+
+total_tests = succesful_tests + failed_tests
+
+puts '+++++++++++++++++++++++++++++++++++++++++++'
+print "#{total_tests} tests #{(total_tests > 1) ? 'were' : 'was'}"
+puts " run with #{succesful_tests} succesful, #{failed_tests} failed."
+
